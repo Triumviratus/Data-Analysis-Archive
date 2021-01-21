@@ -1,0 +1,649 @@
+
+# Title: [STAT]-[511] Final Examination
+## Name: Joshua Ryan Steenson
+## Due Date: 23 November 2020 [18:00]
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(broom)
+library(car)
+library(carData)
+library(aplpack)
+library(knitr)
+library(Sleuth3)
+library(psych)
+library(effects)
+library(corrplot)
+library(Hmisc)
+```
+
+***Question 01 [5 Points]***
+
+You run a simple linear regression analysis, and the diagnostic plots suggest that there are two potential outliers. Describe an appropriate strategy for dealing with these potential outliers.
+
+When running a simple linear regression analysis, scatter plots of the residuals versus the fitted values are considered to be optimal for alerting whoever is implementing the analysis to the presence of outliers, such as the two potential outliers in the problem statement. In order to deal with these outliers, we must logarithmically transform the response variable (whatever it is defined to be), and then run simple linear regression based on the newly transformed data. While there are other transformations that could be applied to the response variable, because there are only two potential outliers and also because logarithmic transformation works well (Ramsey and Schafer (2012)), it should be able to resolve the issue at hand and deal with these potential outliers.
+
+***Question 01 [5 Points]***
+
+You run a simple linear regression analysis, and the diagnostic plots suggest that there are two potential outliers. Describe an appropriate strategy for dealing with these potential outliers.
+
+Examine for any coding or transcription errors. Implement a transformation. If it does not break, consider other assumptions. If none of these strategies work, determine whether removing the potential outliers changes the results. If not, leave the outliers in the diagnostic plots. If removing the potential outliers changes the results, either report both or excluse and clarify that you have restricted the range of the explanatory variable.
+
+***Question 02 [5 Points]***
+
+You run a multiple linear regression analysis and observe an $R^2$ value of 0.92. Determine whether this value alone provides enough evidence to claim that the linearity assumption is appropriate to formulate. Explain why or why not.
+
+According to the linearity assumption, the plot of response means against the explanatory variable is a straight line (Ramsey and Schafer (2012)). The $R^2$ statistic, or coefficient of determination, is the percentage of the total response variation explained by the explanatory variable (Ramsey and Schafer (2012)). Furthermore, in precise laboratory work, $R^2$ values under 90 percent may be low enough to require refinements in technique or the inclusion of other explanatory variables (Ramsey and Schafer (2012)). As a result, because the coefficient of determination addresses the relationship between the explanatory variable and the response variable, if $R^2=0.92$, which is very close to a perfect fit measured at $R^2=1.00$, then the $R^2$ value reported here would provide enough evidence to meet the linearity assumption.
+
+However, this is for simple linear regression analysis. For multiple linear regression analysis, the $R^2$ value can always be increased to 100 percent by adding enough explanatory variables (Ramsey and Schafer (2012)). Also, the adjusted $R^2$ value is better for casual assessment of improvement of fit, while $R^2$ is better for description. Therefore, for multiple linear regression analysis, because $R^2$ can be manipulated and also because the adjusted $R^2$ value is better at assessing the fit of the line describing the plot of response means against potentially multiple explanatory variables, by itself, $R^2=0.92$ does not provide enough evidence to claim that the linearity assumption is appropriate to formulate.
+
+***Question 02 [5 Points]***
+
+You run a multiple linear regression analysis and observe an $R^2$ value of 0.92. Determine whether this value alone provides enough evidence to claim that the linearity assumption is appropriate to formulate. Explain why or why not.
+
+It is not. You can have a high $r^2$ value and a nonlinear relationship. Diagnostic plots must be examined in order to be certain that the linear model is an adequate fit.
+
+***Question 03 [6 Points]***
+
+In order to estimate the average air pollution index $\mu$ for Pittsburgh, Pennsylvania, over the past five years, we randomly select a sample of $n=64$ of those days and compute the average air pollution index for this sample. Assuming that the sample mean is found to be $\overline{x}=15$ and the population is known to have a standard deviation of $\sigma=4$, find a 95 percent confidence interval for $\mu$. Utilize the confidence interval to determine whether the air pollution index for the past five years is statistically different from 14.
+
+Let $\overline{x}=15$, let $n=64$, and let $\sigma=4$. First, all of the assumptions necessary to construct a 95 percent confidence interval are met because the data was randomly sampled, the sampling distribution is approximately normal because $n\geq30$, and if we are considering the the number of days where the air pollution index was measured over the past five years, then our sample size is less than 10 percent, meaning that individual observations are independent.
+
+```{r}
+sample_mean <- 15
+sigma <- 4
+n <- 64
+error <- qnorm(0.975)*(sigma/sqrt(n))
+sample_mean-error
+sample_mean+error
+```
+
+The 95 percent confidence interval is calculated as $\left(14.02002, 15.97998\right)$. Because there is no requirement to round to the nearest whole number, which thereby indicates that 14 is not contained within the calculated 95 percent confidence interval of $\left(14.02002, 15.97998\right)$, we can conclude that the air pollution index for the past five years is statistically different from 14.
+
+***Question 03 [6 Points]***
+
+In order to estimate the average air pollution index $\mu$ for Pittsburgh, Pennsylvania, over the past five years, we randomly select a sample of $n=64$ of those days and compute the average air pollution index for this sample. Assuming that the sample mean is found to be $\overline{x}=15$ and the population is known to have a standard deviation of $\sigma=4$, find a 95 percent confidence interval for $\mu$. Utilize the confidence interval to determine whether the air pollution index for the past five years is statistically different from 14.
+
+```{r}
+15-(1.96*4/sqrt(64))
+15+(1.96*4/sqrt(64))
+```
+
+The 95 percent confidence interval is $(14.02,15.98)$. Because 14 is outside the interval, we would conclude that the air pollution level si significantly different from 14 percent at the five percent level.
+
+***Question 04 [8 Points]***
+
+To test whether a new drug for individuals who suffer from high blood pressure affects mental alertness, a random sample of 12 patients suffering from high blood pressure is selected from a large number of patients who regularly visit an outpatient clinic. Tests of mental alertness are administered to the patient both before and after they receive the drug. Determine whether there is evidence of a decrease in mental alertness, on average, after receipt of the drug for the population of such patients at this outpatient clinic. State your hypotheses, test statistic, *p*-value, and conclusion.
+
+$H_{0}: \mu_{\text{Before}}=\mu_{\text{After}}\rightarrow\mu_{\text{Before}}-\mu_{\text{After}}=0$, where $\mu_{\text{Before}}$ is the average mental alertness score before a patient undergoes treatment and $\mu_{\text{After}}$ is the average mental alertness score after a patient undergoes treatment.
+
+$H_{a}: \mu_{\text{Before}}>\mu_{\text{After}}\rightarrow\mu_{\text{Before}}-\mu_{\text{After}}>0$
+
+```{r}
+before <- c(10,14,5,6,9,15,1,20,10,2,7,10)
+after <- c(5,9,7,3,10,15,4,16,12,5,3,6)
+difference <- before-after
+par(mfrow=c(1,2))
+boxplot(difference, ylab="Difference", main="Effect of Blood Pressure Drug")
+hist(difference, xlab="Difference", main="Effect of Blood Pressure Drug")
+summary(difference)
+sd(difference)
+```
+
+The data are paired because the mental alertness score for a patient before being given the blood pressure drug will be related to the mental alertness score for a patient after being given the blood pressure drug.
+
+The assumption for a paired *t*-test include independent observations and a normal population of differences. For these data, it seems reasonable to assume that the difference in mental alertness before an after a drug is given to one patient does not affect the difference in mental alertness before and after a drug is given to another patient. According to the plots, there were no outliers and the data appear to be normally distributed for both the box plot and the histogram.
+
+```{r}
+t.test(difference, mu=0, alternative="greater", confidence=0.95)
+# Obtain two-sided interval
+t.test(difference, mu=0, alternative="two.sided", confidence=0.95)
+```
+
+Based on the results of the paired *t*-test, we do not have sufficient evidence to suggest that, on average, there is a decrease in mental alertness after receipt of the drug for the population of such patients at this outpatient clinic. The test statistic was calculated as $t=1.2357$. The one-sided *p*-value for the paired *t*-test was calculated as 0.1212, while the two-sided *p*-value for the *t*-test was calculated as 0.2423. Furthermore, the 95 percent confidence interval was calculated as $\left(-0.9113875, 3.2447209\right)$. Because it contained zero, we cannot conclude that there is a decrease in mental alertness after receipt of the drug for the population of such patients at this outpatient clinic.
+
+Because it was explicitly stated that the 12 patients who were given the drug were randomly sampled, the scope of inference can be extended to the entire population of patients who regularly visit an outpatient clinic. However, there was no random assignment of the patients to treatment groups (the researchers did not even utilize a placebo as a control). Therefore, the scope of inference is considered to non-causal. As a result, there is no association between taking the blood pressure drug and a decrease in mental alertness for the population of patients who regularly visit an outpatient clinic.
+
+***Question 04 [8 Points]***
+
+To test whether a new drug for individuals who suffer from high blood pressure affects mental alertness, a random sample of 12 patients suffering from high blood pressure is selected from a large number of patients who regularly visit an outpatient clinic. Tests of mental alertness are administered to the patient both before and after they receive the drug. Determine whether there is evidence of a decrease in mental alertness, on average, after receipt of the drug for the population of such patients at this outpatient clinic. State your hypotheses, test statistic, *p*-value, and conclusion.
+
+```{r}
+before <- c(10, 14, 5, 6, 9, 15, 1, 20, 10, 2, 7, 10)
+after <- c(5, 9, 7, 3, 10, 15, 4, 16, 12, 5, 3, 6)
+t.test(after, before, alternative="less", paired=TRUE)
+```
+
+$H_{0}: \mu_{\text{After}}-\mu_{\text{Before}}=\mu_{\text{Difference}}=0$
+
+$H_{a}=\mu_{\text{Difference}}<0$
+
+$\bar{x}=-1.167$
+
+$p=0.12$
+
+We fail to reject the null hypothesis and conclude that there is no evidence fo a decrease in mental alertness after receipt of the new drug.
+
+***Question 05 [45 Points]***
+
+```{r}
+library(readr)
+housing <- read.csv("SeattleHousing.csv")
+dim(housing)
+summary(housing$price)
+summary(housing$sqft_living)
+```
+
+While there are a large number of variables contained within this data set, for the purpose of this question, we will only focus on describing the relationship between the price that the house sold for and the living area square footage.
+
+To clarify, the living area square footage is considered to be the explanatory variable while the price that the house is sold for is considered to be the response variable. This is because price is usually determined according to the units of measurement for the area of a given residence. Therefore, the research questions asks how living area square footage affects price.
+
+$\underline{\textbf{Question 01}}$: Create a scatter plot for data exploration on the research question [2 Points].
+
+```{r}
+plot(price~sqft_living, data=housing, 
+     xlab="Living Area Square Footage", ylab="Price", 
+     main="Effect of Living Area Square Footage on Price")
+```
+
+$\underline{\textbf{Question 02}}$: Generally describe the scatter plot [2 Points].
+
+Most of the data points are densely contained under $\$1,000,000$ and 3,500 square feet. For the most part, it would appear as as the living area square footage of the house increases, the price of the house also increases. However, there are some data points where the living area square footage is much higher than average, but the price is either average or only slightly larger than average. In fact, the most expensive house in the data set does not even have the highest living area square footage. The house whose price is measured at $\$4,500,000$ has a living area square footage around 6,700 square feet, while the house with a living area square footage of 7,000 square feet has a price that is slightly greater than $\$3,000,000$.
+
+$\underline{\textbf{Question 03}}$: Fit a linear model with the data. Provide the model summary [2 Points].
+
+```{r}
+summary(lm(price~sqft_living, data=housing))
+```
+
+The linear model fitting price to living area square footage has a residual standard error of 249,000 on 1498 degrees of freedom. The $R^2$ value is calculated as 0.4587 while the adjusted $R^2$ value is calculated as 0.4583, the *F*-statistic is calculated as 1,269 on one degree of freedom and 1498 degrees of freedom, and the *p*-value was found to be less than $2.2\times10^{-16}$.
+
+$\underline{\textbf{Question 04}}$: Interpret the intercept for your estimated model in context [2 Points].
+
+The intercept, $\beta_{0}$ $\left(\mu\{Y|X\}=\beta_{0}+\beta_{1}X\right)$, for our estimated model was computed as $-839.961$. In the context of this study, $\beta_{0}=-839.961$ means that when the living area square footage of a house in the random sample of 1500 houses on the Seattle housing market is equal to zero, the price of the house is approximately $\$-839.96$.
+
+$\underline{\textbf{Question 05}}$: Determine whether this intercept is a form of extrapolation. Explain why or why not [2 Points].
+
+This intercept is considered to be a form of extrapolation because $\$-839.961$ is outside of the range of observed values for the response for any possible value of the explanatory variable (living area square footage).
+
+$\underline{\textbf{Question 06}}$: Create a set of residual diagnostic plots and utilize them to assess the assumptions for simple linear regression. Justify your assessments by referring to the study or the plots as necessary [8 Points].
+
+```{r}
+fit1 <- lm(price~sqft_living, data=housing)
+plot(fit1$residuals~sqft_living, ylab="Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=fit1$residuals, x=housing$sqft_living), col="red", lwd=2)
+
+resMod <- fit1$residuals + housing$sqft_living*fit1$coef[2]
+plot(resMod~sqft_living, ylab="Partial Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=resMod, x=housing$sqft_living), col="red", lwd=2)
+```
+
+There are four assumptions for simple linear regression, which are the linearity assumption, the equal-spread assumption, the normality assumption, and the independence assumption. For the independence assumption, we can assume that the price of one house does not depend on the price of another house. We can also assume that the living area square footage of one house does not affect the price of another house.
+
+Because the equal-spread assumption assumes that the spread of the response around this the same at all levels of the explanatory variables, we cannot consider the equal-spread assumption to be true because most of the data points are densely contained below 3,000 square feet and $\$1,000,000$, while the density of the data points decreases as both living area square footage and price increase.
+
+For both residual plots, the line does not appear to be a straight line. Therefore, the linearity assumption for the natural scale data does not hold true. Lastly, the normality assumption is not met for the residual plots because the sub-populations of responses at the different values of the explanatory variable do not all have normal distributions.
+
+Therefore, transformation is necessary so that all of the simple linear regression assumptions are met.
+
+$\underline{\textbf{Question 07}}$: Explore the three possible combinations of logarithmically transformed data for this study. Examine the scatter plots and residual diagnostics for each. If you had to choose one of these transformations, determine which one you would consider to be the most appropriate [8 Points].
+
+The three possible combinations of logarithmically transformed data for this particular study (and for simple linear regression in general) are the logarithmic transformation of the response variable (price), the logarithmic transformation of the explanatory variable (living area square footage), and the logarithmic transformation of both the response variable and the explanatory variable.
+
+```{r}
+# Response variable is logarithmically transformed
+plot(log(price)~sqft_living, data=housing, 
+     xlab="Living Area Square Footage", ylab="Price", 
+     main="Logarithmically Transformed Response Variable")
+
+fit2 <- lm(log(price)~sqft_living, data=housing)
+
+plot(fit2$residuals~sqft_living, ylab="Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=fit2$residuals, x=housing$sqft_living), col="red", lwd=2)
+
+resMod2 <- fit2$residuals + housing$sqft_living*fit2$coef[2]
+plot(resMod2~sqft_living, ylab="Partial Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=resMod2, x=housing$sqft_living), col="red", lwd=2)
+
+# Explanatory variable is logarithmically transformed
+plot(price~log(sqft_living), data=housing, 
+     xlab="Living Area Square Footage", ylab="Price", 
+     main="Logarithmically Transformed Explanatory Variable")
+
+fit3 <- lm(price~log(sqft_living), data=housing)
+
+plot(fit3$residuals~sqft_living, ylab="Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=fit3$residuals, x=housing$sqft_living), col="red", lwd=2)
+
+resMod3 <- fit3$residuals + housing$sqft_living*fit3$coef[2]
+plot(resMod3~sqft_living, ylab="Partial Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=resMod3, x=housing$sqft_living), col="red", lwd=2)
+
+# Both variables are logarithmically transformed
+plot(log(price)~log(sqft_living), data=housing, 
+     xlab="Living Area Square Footage", ylab="Price", 
+     main="Logarithmic Scale")
+
+fit4 <- lm(log(price)~log(sqft_living), data=housing)
+
+plot(fit4$residuals~sqft_living, ylab="Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=fit4$residuals, x=housing$sqft_living), col="red", lwd=2)
+
+resMod4 <- fit4$residuals + housing$sqft_living*fit4$coef[2]
+plot(resMod4~sqft_living, ylab="Partial Residuals", 
+     xlab="Living Area Square Footage", data=housing)
+lines(loess.smooth(y=resMod4, x=housing$sqft_living), col="red", lwd=2)
+```
+
+Based on these results, if I had to choose one of three logarithmic transformations to be the most appropriate, I would choose the logarithmic transformation of both the response variable and the explanatory variable. This is because the shape of the scatter plot, the shape of the residuals plot, and the shape of the partial residuals plot, along with the line for the partial residuals plot, provide the best representation of the data to meet all of the assumptions.
+
+$\underline{\textbf{Question 08}}$: Write out the estimated transformed model [3 Points].
+
+```{r}
+fit4 <- lm(log(price)~log(sqft_living), data=housing)
+summary(fit4)
+```
+
+the general simple linear regression model for logarithmic transformation  both variables is represented as $\mu\{\log{(Y)}|\log{(X)}\}=\beta_{0}+\beta_{1}\log{(X)}$. The simple linear regression model for the logarithmically transformed data is represented as $\mu\{\log{(Y)}|\log{(X)}\}=6.9714+0.8062\log{(X)}$, where $X$ represents the living area square footage of the given property and $Y$ represents the price of the given property.
+
+$\underline{\textbf{Question 09}}$: Interpret the estimated slope coefficient for your transformed model in context, on the original scale [4 Points].
+
+The estimated slope coefficient for the transformed model was computed to be 0.8062. If $\mu\{\log{(Y)}|\log{(X)}\}=6.9714+0.8062\log{(X)}$, then $\text{Median\{Y|X\}}=\text{exp}(6.9714)X^{0.8062}$. An increase in the living area square footage of one square foot is associated with a multiplicative change of $e^{6.9714}1^{0.8062}=1,065.714$ (when rounded to three significant figures) in the median of $Y$. On the original scale, as the living area square footage of the given property increases by one square foot, the price of the given property property increases by approximately $\$1,066$ when rounded to the nearest whole number.
+
+$\underline{\textbf{Question 10}}$: In the summary table, report the *p*-value for this slope coefficient. Report which test produced this *p*-value. State the null hypothesis associated with this test in context [4 Points].
+
+```{r}
+summary(fit4)
+Anova(fit4)
+```
+The *p*-value for the slope coefficient of 0.8062 is less than $2.2\times10^{-16}$. The test that reported this *p*-value was the Analysis of Variance (ANOVA) Table test. The null hypothesis for this study states that there does not exist a relationship between the price that a house is sold for and the living area square footage of that house.
+
+$\underline{\textbf{Question 11}}$: Form a complete conclusion for this study with scope of inference [4 Points].
+
+Because the *p*-value obtained from the Analysis of Variance (ANOVA) Table test was significantly less than $\alpha=0.05$, we have sufficient evidence to reject the null hypothesis and conclude that there is a relationship between the price that a house is old for and the living area square footage of the house. Because the 1500 properties were randomly sampled from the Seattle housing market, our scope of inferences extends to the entire Seattle housing market. However, because there was no random assignment to treatment groups (this was an observational study after all), we cannot conclude that a higher living area square footage causes a higher price for a given property. Therefore, we can only infer an association between living area square footage and the price at which a property is sold for.
+
+$\underline{\textbf{Question 12}}$: Create and report a 90 percent confidence interval for the slope coefficient [2 Points].
+
+```{r}
+summary(fit4)
+confint(fit4, level=0.90)
+```
+
+The fitted $\beta_{1}$ is 0.8062 with an 90 percent confidence interval of $\left(0.7666518,0.8456572\right)$.
+
+$\underline{\textbf{Question 13}}$: Interpret the estimated interval in context, on the original scale [2 Points].
+
+Since the 90 percent confidence interval for $\beta_{1}$ is $\left(0.7666518,0.8456572\right)$, a 90 percent confidence interval for the multiplicative factor in the median of $4^{0.8062}$ is $4^{0.7666518}$ to $4^{0.8456572}$, or 2.90 to 3.23. In the context of this study, the estimated interval can be interpreted such that as the living area square footage quadruples, the median price is between 2.90 and 3.23 times the median price for when the living area square footage doubles.
+
+```{r}
+scatterplot(price~sqft_living, data=housing, smooth=FALSE, regLine=FALSE, 
+            pch=19, xlab="Livable Square Footage",ylab="Price (USD)", 
+            main="Hosing Price by Square Footage in Seattle")
+```
+
+There appears to be a moderate, positive, predominantly linear relationship between the price of a house and its square footage. Some outliers may be identified on the upper end of square footage.
+
+```{r}
+lm1 <- lm(price~sqft_living, data=housing)
+summary(lm1)
+```
+
+For houses featured in the Seattle real estate market with zero square feet of living space, we estimate the mean price to be $-\$836.96$.
+
+This is extrapolation as we do not observe any houses near a square footage of zero.
+
+```{r}
+par(mfrow=c(2,2))
+plot(lm1)
+```
+
+We have a violation of independence as houses in the same area are likely to have similar prices. There is some slight curvature in the residuals versus fitted plot, thereby indicating weak evidence to moderate evidence against linearity. There is clearly funneling in the residuals versus fitted plot, thereby indicating strong evidence against equal variance. As seen in the normal $\text{Q}\text{-}\text{Q}$ plot, there are large deviations from the line of normality. We have a very large sample size here, so this may only be weak evidence against normality. In the residuals versus leverage plot, we observe an observation with high leverage and and the distance of Cook being greater than one, thereby indicating that it is influential.
+
+```{r}
+par(mfrow=c(1,1))
+scatterplot(log(price)~sqft_living, data=housing, smooth=FALSE, regLine=FALSE, 
+            pch=19, main="Logarithmic Transformation of Price")
+lm2 <- lm(log(price)~sqft_living, data=housing)
+par(mfrow=c(2,2))
+plot(lm2)
+
+par(mfrow=c(1,1))
+scatterplot(price~log(sqft_living), data=housing, 
+            smooth=FALSE, regLine=FALSE, pch=19, 
+            main="Logarithmic Transformation of Living Area Square Footage")
+lm3 <- lm(price~log(sqft_living), data=housing)
+par(mfrow=c(2,2))
+plot(lm3)
+
+par(mfrow=c(1,1))
+scatterplot(log(price)~log(sqft_living), data=housing, 
+            smooth=FALSE, regLine=FALSE, pch=19,
+            main="Logarithmic Transformation of Living Area Square Footage")
+lm4 <- lm(log(price)~log(sqft_living), data=housing)
+par(mfrow=c(2,2))
+plot(lm4)
+```
+
+Based on the residual diagnostics, either the model that only logarithmically transforms price or the model that logarithmically transforms both price and living area square footage could be chosen. The model that logarithmically transforms both variables seems preferable, however.
+
+```{r}
+summary(lm2)
+summary(lm4)
+```
+
+Let $x$ represent price and let $y$ represent living area square footage.
+
+$\hat{\mu}\{\log{x}\ |\ y\}=12.24+0.0003954\cdot{y}$
+
+$\hat{\mu}\{\log{x}\ |\ \log{y}\}=6.9714+0.8062\cdot{y}$
+
+For each additional square foot of living space, we estimate a 1.000395 multiplicative change in the median price, which is measured in USD.
+
+For a doubling of the square footage, we estimate a 1.7486 multiplicative change in the median price, which is measured in USD.
+
+There is no linear relationship between the logarithmic transformation of price and the logarithmic transformation of living area square footage in the population of houses on the Seattle real estate market that sold in 2014 or 2015.
+
+We have strong evidence to conclude that there is a linear relationship between the logarithmic transformation of price and the living area square footage of a house on the Seattle real estate market in the population of Seattle houses sold in 2014 and 2015. However, as living area square footage was not randomly assigned to houses, we can only claim that these variable are associated.
+
+We have strong evidence to conclude that there is a linear relationship between the logarithmic transformation of price and the logarithmically transformed living area square footage of a house on the Seattle housing market in the population of houses sold in 2014 and 2015. However, as living area square footage was not randomly assigned to houses, we can only claim that these variable are associated.
+
+```{r}
+confint(lm2, level=0.9)
+confint(lm4, level=0.9)
+```
+
+$(0.00377,\ 0.000414)$
+
+$(0.7667,\ 0.8457)$
+
+We are 90 percent confident that for each additional square foot of living space, the multiplicative change in the true median price is between 1.000377 and 1.000414. We are 90 percent confident that for each doubling of living area square footage, the multiplicative change in the true median price is between 1.7013 and 1.7971.
+
+***Question 06 [51 Points]***
+
+```{r}
+blood <- read.csv("Framingham.csv")
+dim(blood)
+summary(blood$TOTCHOL3)
+summary(blood$SYSBP1)
+summary(blood$DIABP1)
+```
+
+This data set concerns a long-term cohort study of cardiovascular diseases.
+
+$\underline{\textbf{Question 01}}$: In this question, we utilize regression to model total serum cholesterol at time $3$ by utilizing initial systolic blood pressure and initial diastolic blood pressure.
+
+$\underline{\textbf{(Question 01) Part 01}}$: Create a scatter plot for data exploration [4 Points]
+
+```{r}
+plot(blood$TOTCHOL3~blood$SYSBP1, xlab="Initial Systolic Blood Pressure", 
+     ylab="Total Serum Cholesterol at Time 3", main="SYSBP1 Versus TOTCHOL3")
+plot(blood$TOTCHOL3~blood$DIABP1, xlab="Initial Diastolic Blood Pressure", 
+     ylab="Total Serum Cholesterol at Time 3", main="DIABP1 Versus TOTCHOL3")
+```
+
+$\underline{\textbf{(Question 01) Part 02}}$: Determine whether the regression model for predicting total serum cholesterol at time $3$ from initial systolic blood pressure and initial diastolic blood pressure is statistically significant. Determine whether the individual contribution of any of the variables is statistically significant [4 Points].
+
+```{r}
+fit2 <- lm(TOTCHOL3~SYSBP1+DIABP1, data=blood)
+fit3 <- lm(TOTCHOL3~SYSBP1, data=blood)
+fit4 <- lm(TOTCHOL3~DIABP1, data=blood)
+summary(fit2)
+summary(fit3)
+summary(fit4)
+```
+
+With a *p*-value computed as 0.01594, the regression model for predicting total serum cholesterol at time $3$ from initial systolic blood pressure $\underline{\textbf{and}}$ initial diastolic blood pressure is considered to be statistically significant because it is less than $\alpha=0.05$. With a *p*-value computed as 0.009668, the regression model for predicting total serum cholesterol at time $3$ only from initial systolic blood pressure is considered to be statistically significant because it is less than $\alpha=0.05$. Lastly, with a *p*-value computed as 0.004692, the regression model for predicting total serum cholesterol at time $3$ only from initial diastolic blood pressure is considered to be statistically significant because it is less than $\alpha=0.05$.
+
+$\underline{\textbf{(Question 01) Part 03}}$: Explain why you consider the model to be statistically significant, but do not consider any of the predictor variables to be statistically significant [Bonus: 2 Points].
+
+Even though the regression model for predicting total serum cholesterol at time $3$ from initial systolic blood pressure $\underline{\textbf{and}}$ initial diastolic blood pressure is considered to be statistically significant, both of the predictor variables (initial systolic blood pressure and initial diastolic blood pressure) are not considered to be statistically significant because the *p*-value for the predictor variable known as initial systolic blood pressure was computed as 0.585 and the *p*-value for the predictor variable known as initial diastolic blood pressure was computed as 0.207. Both of these *p*-values are greater than $\alpha=0.05$, and therefore are not considered to be statistically significant.
+
+$\underline{\textbf{(Question 01) Part 04}}$: Compare the proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure alone to that explained by the combination of initial diastolic blood pressure and initial systolic blood pressure [4 Points].
+
+In simple linear regression, $R^2$ is the proportion of variance in the response explained by the explanatory variable. This continues to be true in multiple regression, but it is the proportion of variability explained by all the explanatory variables together.
+
+```{r}
+fit2 <- lm(TOTCHOL3~SYSBP1+DIABP1, data=blood)
+fit4 <- lm(TOTCHOL3~DIABP1, data=blood)
+summary(fit2)
+summary(fit4)
+Anova(fit2)
+Anova(fit4)
+```
+
+The proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure and initial systolic blood pressure was computed as $R^2=0.02883$. The proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure alone was computed as $R^2=0.0278$. Therefore, the proportion of variance proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure and initial systolic blood pressure is slightly greater than the proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure alone.
+
+Let $\frac{\text{SYSBP1}+\text{DIABP1}}{\text{SYSBP1}+\text{DIABP1}+\text{Residuals}}$ be the formula to calculate the proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure and initial systolic blood pressure. The variable names are represented by their sum of squares values.
+
+$\frac{\text{SYSBP1}+\text{DIABP1}}{\text{SYSBP1}+\text{DIABP1}+\text{Residuals}}=\frac{626+3357}{626+3357+593867}\approx0.0067$
+
+Let $\frac{\text{DIABP1}}{\text{DIABP1}+\text{Residuals}}$ be the formula to calculate the proportion of variance in total serum cholesterol at time $3$ explained by initial diastolic blood pressure alone. The variable names are represented by their sum of squares values.
+
+$\frac{\text{DIABP1}}{\text{DIABP1}+\text{Residuals}}=\frac{17003}{17003+594493}\approx0.0278$
+
+$\underline{\textbf{Question 02}}$: Finally, we will construct a multiple regression model predicting glucose at time $3$ by utilizing the following set of predictor variables, which are whether the patient has diabetes (at time $1$), initial systolic blood pressure, initial diastolic blood pressure, initial ventricular rate, glucose (at time $1$), whether the patient is a current cigarette smoker (at time $1$), whether the patient takes anti-hypertensive medication (at time $1$), initial body mass index, biological sex (at time $1$), and age (at time $1$).
+
+$\underline{\textbf{(Question 02) Part 01}}$: Examine correlations between the predictor variables (include a correlation matrix). Determine whether you would exclude any of these variables from your model. Explain your reasoning [4 Points].
+
+```{r}
+newdata <- subset(blood, select=c(DIABETES1, SYSBP1, DIABP1, HEARTRTE1, 
+                                  GLUCOSE1, CURSMOKE1, BPMEDS1, 
+                                  BMI1, SEX, AGE1))
+newdata.rcorr <- rcorr(as.matrix(newdata))
+newdata.rcorr
+```
+
+After examining both the correlation coefficients and the *p*-values for all of the predictors variables, the predictor variables that I would exclude from my model are biological sex, age, and body mass index. This is not only because many of the correlation coefficients for these predictor variables are either weakly negatively correlated or essentially not correlated, and their *p*-values are not statistically significant, when we consider the effect that the other predictor variables have on glucose metabolism as described in the problem statement, biological sex, age, and body mass index, for reasons that are numerous according to the research community, do not exert as significant of an effect as the other predictor variables. However, my intuition on this reasoning requires more medical research. Ultimately, my judgment is based solely on the correlation coefficients and the *p*-values.
+
+$\underline{\textbf{(Question 02) Part 02}}$: Now fit an initial regression model. Give the plot of Cook's distance for this regression. Check the observation with the highest measurement of Cook's distance and determine whether it is considered to be a potential outlier here. Determine whether you consider it to be possible for an adult to have such readings. Explain your reasoning and cite your sources [6 Points].
+
+```{r}
+fit5 <- lm(GLUCOSE3~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             GLUCOSE1 + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=blood)
+summary(fit5)
+par(mfrow=c(1,2))
+plot(fit5, which=c(1,2,4,5))
+```
+The observation with the highest measurement of Cook's distance is designated observation 47, whose measurement of Cook's distance exceeds 0.3. It is considered to be a potential outlier here because among all the observations in the data, observation 47 the closest to one, even if it is only greater than 0.3 at best. Furthermore, it is also considered to be an outlier because its measurement of Cook's distance greatly exceeds the measurements of Cook's distance attained by observations 66 and 349.
+
+It should be clarified that the model is designed to predict the effect that the predictor variables have on fasting glucose at time $3$, such that one would expect the predictor variables to be defined at such quantitative or binary values as to be indicative of impaired fasting glucose. In fact, the work of Levitzky et al. (2008) (https://www.jacc.org/doi/pdf/10.1016/j.jacc.2007.09.038), though incomplete, explored the relationship between impaired fasting glucose and such predictors as diabetes and biological sex, both of which are predictors that are utilized in the model. Therefore, if there is an outlier explained by Cook's distance where someone might not have impaired fasting glucose in spite of all of the predictors, perhaps this individual might not have diabetes and might be considered male, seeing as how Levitzky et al. (2008) found that the female participants in their study were at an increased risk of cardiovascular complications as a result of their impaired fasting glucose levels. Ultimately, however, more research and solidification of the foundational facts of the Framingham Heart Study are required to more clearly elucidate the relationship between impaired fasting glucose and the given cardiovascular predictor variables. After all, such predictors as heart rate and blood pressure could exert the most significant effect when compared to the other predictor variables.
+
+$\underline{\textbf{(Question 02) Part 03}}$: Now refit the regression model without Number 47, and recheck the model assumptions. Determine whether you believe the assumptions for linear regression are met. Explain your reasoning [6 Points].
+
+```{r}
+data47 <- blood[c(1:400),]
+fit47 <- lm(GLUCOSE3~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             GLUCOSE1 + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=data47[-47,])
+summary(fit47)
+par(mfrow=c(2,2))
+plot(fit47)
+plot(fit47, which=c(1,2,4,5))
+```
+
+For all of the *p*-values of the coefficients that changed by removing observation 47, many decreased (some to below $\alpha=0.05$). As a result, observation 47 should be excluded from the data set. The independence assumption is met because we can assume that the clinical, physical, and lifestyle features for the 400 patients that comprise the study do not affect one another. 
+
+The linearity assumption is not met because the line for the residuals versus fitted plot does not meet the criterion of a horizontal line without distinct patterns. The normality assumption is met because for the Q-Q plot, the residual points, for the most part, follow the straight line. Lastly, the equal-spreads assumption is not met because the data points are not equally spread. Transformation of the original model and the model excluding observation 47 is considered to be necessary.
+
+$\underline{\textbf{(Question 02) Part 04}}$: Now fit a regression utilizing logarithmically transformed glucose. In addition, logarithmically transform glucose at time $1$ as well (also without Number 47). Write out the estimated model and include your regression summary table [4 Points].
+
+```{r}
+log.fit5 <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=blood)
+log.fit47 <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=data47[-47,])
+summary(log.fit5)
+summary(log.fit47)
+```
+
+***Logarithmically Transformed Glucose Model***
+
+$\mu\{\log(Y)|X_{1},X_{2},X_{3},X{4},\log(X_{5}),X_{6},X_{7},X_{8},X_{9},X_{10}\}=3.392606+0.242710(X_{1})+0.003308(X_{2})-0.004285(X_{3})+0.001658(X_{4})+0.098053(\log(X_{5}))-0.003766(X_{6})-0.059001(X_{7})+0.010920(X_{8})+0.002531(X_{9})+0.003051(X_{10})$
+
+***Logarithmically Transformed Glucose Model Without Observation 47***
+
+$\mu\{\log(Y)|X_{1},X_{2},X_{3},X{4},\log(X_{5}),X_{6},X_{7},X_{8},X_{9},X_{10}\}=3.225662+0.223319(X_{1})+0.003243(X_{2})-0.004552(X_{3})+0.000867(X_{4})+0.148278(\log(X_{5}))+0.014830(X_{6})-0.043896(X_{7})+0.010385(X_{8})+0.018971(X_{9})+0.003255(X_{10})$
+
+$\underline{\textbf{(Question 02) Part 05}}$: Give diagnostic plots for this modified regression. Determine whether you believe the assumptions for linear regression are met. Explain your reasoning [6 Points].
+
+```{r}
+par(mfrow=c(2,2))
+plot(log.fit5)
+plot(log.fit5, which=c(1,2,4,5))
+par(mfrow=c(2,2))
+plot(log.fit47)
+plot(log.fit47, which=c(1,2,4,5))
+```
+
+For both logarithmically transformed models, the independence assumption is still met because it remains unchanged that the clinical, physical, and lifestyle features of the patients that comprise the data set are independent of one another.
+
+Because the residuals versus fitted plots for both models have horizontal lines, they both meet the linearity assumption. Because the residual points follow the dashed straight line of the normal Q-Q plots (for the most part) for both models, they both meet the normality assumption. While the distribution of the spread is an improvement for both models according to the scale-location plots, they are not quite as equal as they would be under ideal conditions. Therefore, the equal-spreads assumption is not met. If there are other transformations that could be applied to help meet the equal-spreads assumption, then they should be applied. Also, the lines for Cook's distance for both models seem to support the assumptions because of the way in which they account for the outliers (especially by excluding observation 47).
+
+$\underline{\textbf{(Question 02) Part 06}}$: Give the interpretation of the regression coefficients on whether the patient has diabetes (at time $1$) and initial systolic blood pressure in both regression models [8 Points].
+
+For the logarithmically transformed model that includes observation 47, the regression coefficient for whether the patient has diabetes (at time $1$), which is represented as $X_{1}$ in the model, was computed to be 0.242710 and the regression coefficient for initial systolic blood pressure, which is represented as $X_{2}$ in the model, was computed to be 0.003308.
+
+If $\mu\{\log(Y)|X_{1}\}=3.392606+0.242710(X_{1})$, then $\text{Median}\{Y|X\}=e^{3.392606}e^{0.242710(X_{1})}$. This means that $\text{Median}\{Y|X+1\}/\text{Median}\{Y|X\}=e^{0.242710}$. Interpreted in the context of this study, having diabetes (represented by a value of one) is associated with a multiplicative change of $e^{0.242710}\approx1.275$ milligrams per deciliter in glucose at time $3$.
+
+If $\mu\{\log(Y)|X_{2}\}=3.392606+0.003308(X_{2})$, then $\text{Median}\{Y|X\}=e^{3.392606}e^{0.003308(X_{2}}$. This means that $\text{Median}\{Y|X+1\}/\text{Median}\{Y|X\}=e^{0.003308}$. Interpreted in the context of this study, an increase in initial systolic blood pressure of one millimeter of mercury is associated with a multiplicative change of $e^{0.003308}\approx1.0033$ milligrams per deciliter in glucose at time $3$.
+
+
+For the logarithmically transformed model that excludes observation 47, the regression coefficient for whether the patient has diabetes (at time $1$) was computed to be 0.223319, which is represented as $X_{1}$ in the model, and the regression coefficient for initial systolic blood pressure, which is represented as $X_{2}$ in the model, was computed to be 0.003243.
+
+If $\mu\{\log(Y)|X_{1}\}=3.225662+0.223319(X_{1})$, then $\text{Median}\{Y|X\}=e^{3.225662}e^{0.223319(X_{1})}$. This means that $\text{Median}\{Y|X+1\}/\text{Median}\{Y|X\}=e^{0.223319}$. Interpreted in the context of this study, having diabetes (represented by a value of one) is associated with a multiplicative change of $e^{0.223319}\approx1.25$ milligrams per deciliter in glucose at time $3$.
+
+If $\mu\{\log(Y)|X_{2}\}=3.225662+0.003243(X_{2})$, then $\text{Median}\{Y|X\}=e^{3.225662}e^{0.003243(X_{2}}$. This means that $\text{Median}\{Y|X+1\}/\text{Median}\{Y|X\}=e^{0.003243}$. Interpreted in the context of this study, an increase in initial systolic blood pressure of one millimeter of mercury is associated with a multiplicative change of $e^{0.003243}\approx1.00325$ milligrams per deciliter in glucose at time $3$.
+
+$\underline{\textbf{(Question 02) Part 07}}$: Utilize the model from part four as an initial model to perform a model refinement according to the *p*-values (utilize $p=0.2$ as the cutoff), and exhibit all of your steps as well as the final model [5 Points].
+
+```{r}
+log.fit5 <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=blood)
+Anova(log.fit5)
+log.fit47 <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + CURSMOKE1 + BPMEDS1 + BMI1 + 
+                             SEX + AGE1), data=data47[-47,])
+Anova(log.fit47)
+```
+
+For the model that includes observation 47, the predictor variables with *p*-values that are significantly greater than 0.2 are $\text{CURSMOKE1}$, $\text{BPMEDS1}$, and biological sex. Therefore, in order to refine the model, these predictors need to be removed. doing so is considered to be logical because, intuitively speaking, such lifestyle features are less likely to affect a metabolic function such as glucose metabolism as they would a cardiovascular function.
+
+For the model that excludes observation 47, for the same reasons as the other model, $\text{CURSMOKE1}$, $\text{BPMEDS1}$, and biological sex should be removed.
+
+```{r}
+log.fit5_step_two <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + 
+                                               DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + BMI1 + AGE1), data=blood)
+Anova(log.fit5_step_two)
+log.fit47_step_two <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + 
+                                                DIABP1 + HEARTRTE1 + 
+                             log(GLUCOSE1) + AGE1), data=data47[-47,])
+Anova(log.fit47_step_two)
+```
+
+With the the cutoff for *p*-values established at $p=0.2$, when rounded to two significant digits, all of the *p*-values for the predictor variables for the model including observation 47 are considered to be satisfactory. As a result, this should be considered the final model for logarithmically transforming glucose at time $1$, logarithmically transforming glucose at time $3$, and including observation 47.
+
+For the model that excludes observation 47, the only predictor variable whose *p*-value still exceeds 0.2 is initial ventricular rate. Therefore, in order to attain the final model, it should be removed.
+
+```{r}
+log.fit47_step_three <- lm(log(GLUCOSE3)~(DIABETES1 + SYSBP1 + DIABP1 + 
+                             log(GLUCOSE1) + AGE1), data=data47[-47,])
+Anova(log.fit47_step_three)
+```
+
+Now that all of the *p*-values for the predictor variables are less than 0.2, this should be considered the final model for logarithmically transforming glucose at time $1$, logarithmically transforming glucose at time $3$, and including observation 47.
+
+***Question 06 [51 Points]***
+
+```{r}
+fit1 <- lm(TOTCHOL3~SYSBP1+DIABP1, data=blood)
+require(psych)
+pairs.panels(blood[ , c(5:6,17)], ellipse=FALSE, main="Scatterplot Matrix")
+summary(fit1)
+```
+
+Correlation between systolic blood pressure and diastolic blood pressure is quite high (0.776), indicating a collinearity problem. Each one alone has some correlation with the outcome, however.
+
+```{r}
+fit2 <- lm(TOTCHOL3~DIABP1, data=blood)
+summary(fit2)
+```
+
+The $r^2$ value is 0.028 for diastolic blood pressure and the $r^2$ value for both diastolic blood pressure and systolic blood pressure together is 0.029. They are quite similar, and both quite low.
+
+```{r}
+pairs.panels(blood[ , c(2,4:7,9:13)], ellipse=FALSE, main="Scatterplot Matrix")
+```
+
+The variables to be excluded from the model would be diastolic blood pressure, due to correlation, systolic blood pressure, due to high correlation, and whether the patient is diabetic, given that it has a high correlation with casual glucose levels.
+
+```{r}
+fit3 <- lm(GLUCOSE3~DIABP1+SYSBP1+HEARTRTE1+
+             GLUCOSE1+DIABETES1+CURSMOKE1+BPMEDS1+BMI1+SEX+AGE1, data=blood)
+summary(fit3)
+plot(fit3, which=4)
+blood[47,]
+```
+
+Descriptions for assumptions may vary, but at the very minimum, the assumptions to be covered must include linearity, constant variance, normality, and outliers.
+
+```{r}
+plot(fit3, which=c(1,2,4,5))
+fit4 <- lm(log(GLUCOSE3)~DIABP1+SYSBP1+HEARTRTE1+
+             GLUCOSE1+DIABETES1+CURSMOKE1+BPMEDS1+BMI1+SEX+AGE1, 
+           data=blood[-47,])
+summary(fit4)
+plot(fit4)
+```
+
+Let $G3$ represent glucose levels at time 3, let $\text{DBP}1$ represent initial diastolic blood pressure, let $\text{SBP}1$ represent initial systolic blood pressure, let $H1$ represent initial heart rate, let $G1$ represent initial glucose levels, let $S1$ represent whether someone is currently a smoker, let $B1$ represent whether someone is initially on blood pressure medication, let $\text{BMI}1$ represent initial body mass index, let $S$ represent biological sex, and let $A1$ represent age. Let $D$ represent diabetes
+
+$\hat{\mu}\{\log{G3} \ | \ \text{DBP}1,\ \text{SBP}1,\ H1,\ \log{G1},\ D,\ S1,\ B1,\ \text{BMI}1, S,\ A1,\ D\}=\hat{\mu}$
+
+$\hat{\mu}_{1}=3.225662-0.004552\cdot{\text{DBP}1}+0.003242\cdot{\text{SBP}1}$
+
+$\hat{\mu}_{2}=0.000867\cdot{H1}+0.148278\cdot{\log{G1}}+0.223319\cdot{D1}$
+
+$\hat{\mu}_{3}=0.014830\cdot{S1}-0.043896\cdot{B1}+0.010385\cdot{\text{BMI}1}$
+
+$\hat{\mu}_{4}=0.018971\cdot{S}+0.003255\cdot{A1}$
+
+$\hat{\mu}=\hat{\mu}_{1}+\hat{\mu}_{2}+\hat{\mu}_{3}+\hat{\mu}_{4}$
+
+
+On the original scale, all else being equal, someone who was diabetic at time one has casual glucose levels that are almost 24 milligrams per deciliter higher at time three than someone who is not diabetic. On the logarithmic scale, all else being equal, someone who was diabetic at time one has casual glucose 1.25 times higher, or 25 percent higher, than someone who is not diabetic at time three.
+
+Holding all other covariates constant we expect a difference in systolic blood pressure at time one of one millimeter of Mercury to correspond to a difference in casual glucose at time 3 of 0.15 milligrams per deciliter, where glucose increases with increasing blood pressure.
+
+Holding all else constant, we expect a difference in systolic blood pressure at time one of one millimeter of Mercury to correspond to 0.14 percent greater glucose levels at time three.
+
+```{r}
+Anova(fit4)
+fit5 <- lm(log(GLUCOSE3)~DIABP1+SYSBP1+HEARTRTE1+log(GLUCOSE1)+DIABETES1+
+             CURSMOKE1+BPMEDS1+BMI1+SEX+AGE1, data=blood[-47,])
+Anova(fit5)
+fit6 <- lm(log(GLUCOSE3)~DIABP1+SYSBP1+HEARTRTE1+log(GLUCOSE1)+DIABETES1+
+             CURSMOKE1+BMI1+SEX+AGE1, data=blood[-47,])
+Anova(fit6)
+fit7 <- lm(log(GLUCOSE3)~DIABP1+SYSBP1+HEARTRTE1+log(GLUCOSE1)+DIABETES1+
+             BMI1+SEX+AGE1, data=blood[-47,])
+Anova(fit7)
+fit8 <- lm(log(GLUCOSE3)~DIABP1+SYSBP1+HEARTRTE1+log(GLUCOSE1)+DIABETES1+
+             BMI1+AGE1, data=blood[-47,])
+Anova(fit8)
+```
+

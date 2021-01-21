@@ -1,0 +1,67 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(Sleuth3)
+```
+
+When both the response and the predictor are logarithmically transformed, $\widehat{\log{y}}=\beta_{0}+\beta_{1}\cdot\log{X}$. Therefore, $\hat{Y}=e^{\beta_{0}}X^{\beta_{1}}$.
+
+If $x_{1}=2x_{2}$, then $\frac{\hat{Y_{1}}}{\hat{Y_{2}}}=\frac{e^{\beta_{0}}X^{\beta_{1}}}{e^{\beta_{0}}X^{\beta_{2}}}=\left(\frac{X_{1}}{X_{2}}\right)^{\beta_{1}}=2^{\beta_{1}}$.
+
+```{r}
+age <- c(rep(0,5), rep(1,5), rep(2,5), rep(3,5), rep(4,5))
+plasma <- c(13.44,12.84,11.91,16.09,13.6,10.11,11.38,10.28,8.96,
+8.59,9.83,9,8.65,7.85,8.88,7.94,6.01,5.14,6.9,6.77,4.86,5.1,5.67,5.57,6.23)
+
+plasma.SLR <- lm(plasma~age)
+summary(plasma.SLR)
+par(mfrow=c(1,2))
+plot(plasma.SLR, which=c(1,2))
+
+plasma.SLR2 <- lm(plasma[-4]~age[-4])
+summary(plasma.SLR2)
+par(mfrow=c(1,2))
+plot(plasma.SLR2, which=c(1,2))
+```
+
+Correlation does not imply causation.
+
+```{r}
+risk <- read.csv("risk.csv")
+set.seed(1111111)
+risk <- risk[sample(1:60000, 5000),]
+risk$WEIGHT2[risk$WEIGHT2>999] = NA
+risk$HEIGHT2[risk$HEIGHT3>711] = NA
+risk$HEIGHT3 <- 12*trunc(risk$HEIGHT3/100)+round(100*(risk$HEIGHT3/100-trunc(risk$HEIGHT3/100)))
+
+plot(risk$WEIGHT2, risk$HEIGHT3)
+abline(lm(HEIGHT3~WEIGHT2, data=risk)$coef, col="red")
+fit1 <- lm(HEIGHT3~WEIGHT2, data=risk)
+summary(fit1)
+par(mfrow=c(2,2))
+plot(fit1, which=c(1,2,3,5))
+
+fit2 <- lm(log(HEIGHT3)~WEIGHT2, data=risk)
+summary(fit2)
+par(mfrow=c(2,2))
+plot(fit2, which=c(1,2,3,5))
+
+fit3 <- lm(HEIGHT3~log(WEIGHT2), data=risk)
+summary(fit3)
+par(mfrow=c(2,2))
+plot(fit3, which=c(1,2,3,5))
+
+fit4 <- lm(log(HEIGHT3)~log(WEIGHT2), data=risk)
+summary(fit4)
+par(mfrow=c(2,2))
+plot(fit4, which=c(1,2,3,5))
+
+cor(risk$WEIGHT2, risk$HEIGHT3, use="pairwise")
+```
+
+Correlation does not imply causation.
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+

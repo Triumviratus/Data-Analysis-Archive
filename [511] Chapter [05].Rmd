@@ -1,0 +1,109 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(tidyverse)
+library(Sleuth3)
+```
+
+$s^{2}_{p}=\frac{\sum_{i=1}^{I}(n_{i}-1)s^{2}_{i}}{\sum_{i=1}^{I}(n_{i}-1)}$
+
+$df=\sum_{i=1}^{I}(n_{i}-1)=n-I$, where *I* is the number of groups, $n_{i}$ is the size of group *i*, and *n* is the total sample size.
+
+Female mice were randomly assigned to one of six groups. We are here to determine whether diet restriction increases longevity. We can utilize a *t*-test to compare specific pairs of groups, however, we must compute the pooled standard deviation by utilizing all the data.
+
+```{r}
+mice <- case0501
+aov_fit <- aov(Lifetime~Diet, data=mice)
+aov_fit$df.residual # Degrees of Freedom
+sqrt(summary(aov_fit)[[1]][2,3]) # Pooled Standard Deviation
+summary(aov_fit)
+
+table(mice$Diet)
+s_pooled <- sqrt(summary(aov_fit)[[1]][2,3])
+se_pair <- s_pooled*sqrt((1/57)+(1/71))
+se_pair
+
+# Computing the t-statistic
+diff_means <- mean(mice$Lifetime[mice$Diet=="N/R50"])-
+  mean(mice$Lifetime[mice$Diet=="N/N85"])
+t_stat <- diff_means/se_pair
+t_stat
+
+# Computing the p-value
+2*(1-pt(t_stat, aov_fit$df.residual))
+
+# Completing the t-test by building the confidence interval
+diff_means
+diff_means + c(-1,1)*se_pair*qt(0.975, aov_fit$df.residual)
+```
+
+We have very strong evidence for a difference in average lifespan between mice who are fed a diet that is characterized by restricted calorie intake after weaning and those fed a standard diet of 85 kilocalories per day after weaning. On average, mice on the restricted diet live 9.6 months longer, with the 95 percent confidence interval ranging from 7.3 months to 11.9 months.
+
+For the ANOVA test, the assumptions are that all groups have a common standard deviation, the populations are normally distributed within groups such that there are no outliers, and there is independence between and within groups. Similar to checking assumptions for the *t*-test, tools that are utilized in order to check assumptions for the ANOVA test include side-by-side box plots, normal quantile-quantile plots (by group), and cogitation experiments.
+
+```{r}
+spock <- case0502
+boxplot(spock$Percent~spock$Judge, xlab="Judge", ylab="Percent Female", 
+        main="Percent of Women on Jury Venires by Judge", color="lightblue")
+
+par(mfrow=c(1,2))
+qqnorm(spock$Percent[spock$Judge=="E"])
+qqline(spock$Percent[spock$Judge=="E"], col="red", lwd=2)
+qqnorm(spock$Percent[spock$Judge=="F"])
+qqline(spock$Percent[spock$Judge=="F"], col="red", lwd=2)
+```
+
+The residual is defined to be the difference between the observed value and the value predicted by the model. Plotting residuals is often a better diagnostic than plotting the data before fitting a model, because violations evident in residual plots are much more problematic. It also allows simultaneous evaluation of normality of groups.
+
+```{r}
+res_fit <- lm(Percent~Judge-1, data=spock)
+summary(res_fit)
+plot(res_fit, which=1) # Equal Standard Deviations
+plot(res_fit, which=2) # Normality
+plot(res_fit, which=5) # Outliers (Leverage) 
+```
+
+Leverage is one method for identifying outliers.
+
+```{r}
+sunspot <- ex0323
+fit <- lm(CancerRate~SunspotActivity, data=sunspot)
+plot(fit$resid~sunspot$Year, main="Sunspot And Cancer Data", 
+     ylab="Residuals", xlab="Year")
+abline(h=0, col="red", lwd=2)
+```
+
+Leverage is one method for identifying outliers.
+
+```{r}
+data <- ex0524
+fit_iq <- lm(Income2005~IQquartile, data=data)
+par(mfrow=c(1,2))
+plot(fit_iq, which=c(1,2))
+log_fit_iq <- lm(log(Income2005)~IQquartile, data=data)
+par(mfrow=c(1,2))
+plot(log_fit_iq, which=c(1,2))
+```
+
+Leverage is one method for identifying outliers.
+
+```{r}
+par(mfrow=c(2,2))
+mice_fit <- lm(Lifetime~Diet, data=mice)
+plot(mice_fit, which=c(1,2))
+boxplot(mice$Lifetime~mice$Diet, xlab="Diet", ylab="Lifetime", 
+        main="Effect of Nutrition on Longevity")
+```
+
+The one-way ANOVA test effectively compares two nested models, operating under the assumptions that all means are equal and all groups have their own mean. The models are nested because the first model is a special case of the second model.
+
+```{r}
+full_model_fit <- aov(Percent~Judge, data=spock)
+summary(full_model_fit)
+spock$reduced_group <- I(spock$Judge=="Spock's")
+fit_reduced <- aov(Percent~reduced_group, data=spock)
+summary(fit_reduced)
+anova(fit_reduced, full_model_fit)
+```
+
+Thus far, we have been assuming fixed effects, whereby all possible groups are represented in our data and we are interested in the specific values of the means for those groups. Another possibility is random effects, whereby groups are effectively a random sample of possible groups, and we are interested broadly in the magnitude of between-group variation, rather than the particular means of the particular groups sampled. Mostly, these effects are treated the same. The difference is interpretation, and one additional piece of information to be reported if we are assuming random effects.

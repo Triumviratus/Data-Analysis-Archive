@@ -1,0 +1,116 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(warn = -1)
+library(tidyverse)
+library(Sleuth3)
+```
+
+Known assumptions include normality of the population(s), equal population variances or standard deviations (for two-sample tests), and independence of observations.
+
+The normality of a population implies the normality of a sampling distribution for the sample mean and the normality of a sampling distribution for the difference in sample means.
+
+The *t*-distribution is based on the assumption that the sampling distribution of our statisic is normal. Because we do not know the true standard deviation, we have to estimate.
+
+According to the Central Limit Theorem, if the sample size is large enough, the sampling distributions of means will be normal, regardless of underlying population distribution.
+
+```{r, echo = FALSE}
+x <- rexp(1e6, 0.5)
+par(mfrow=c(1,3))
+hist(x, freq = FALSE, main = "Population Distribution", xlab= "X")
+xbar <- replicate(1e3, mean(sample(x,5)), simplify = "vector")
+hist(xbar, freq = FALSE, main = "Simpling Distribution (n=5)", xlab = expression(bar(x)))
+xbar2 <- replicate(1e3, mean(sample(x,50)), simplify = "vector")
+hist(xbar2, freq = FALSE, main = "Sampling Distribution (n=50)", xlab = expression(bar(x)))
+```
+
+***How to Check Normality: Quantile-Quantile Plot***
+
+```{r echo = FALSE}
+par(mfrow=c(1,2))
+x = rnorm(500, 0.1)
+hist(x, freq = FALSE)
+qqnorm(x)
+qqline(x, col = "red")
+```
+
+***Checking Normality: Right-Skewed Distribution***
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+x = rexp(500)
+hist(x, freq = FALSE)
+qqnorm(x)
+qqline(x, col = "red")
+```
+
+***Checking Normality: Left-Skewed Distribution***
+
+```{r echo = FALSE}
+par(mfrow = c(1,2))
+x = max(x)+(10-x)
+hist(x, freq = FALSE)
+qqnorm(x)
+qqline(x, col = "red")
+```
+
+***Equal Population Variances***
+
+Unequal variances are a problem for utilizing the pooled standard deviation.
+
+$SE = \sqrt{\frac{\sigma^{1}_{2}}{n_{1}}+\frac{\sigma^{2}_{2}}{n_{2}}} \approx \sqrt{\frac{s^{1}_{2}}{n_{1}}+\frac{s^{2}_{2}}{n_{2}}}$
+
+$SE_{\text{pooled}} = \sigma\sqrt{\frac{1}{n_{1}}+\frac{1}{n_{2}}} \approx \sqrt{\frac{(n_{1}-1)s^{2}_{1}+n_{2}-1)s^{2}_{2}}{n_{1}+n_{2}-2}}\sqrt{\frac{1}{n_{1}}+\frac{1}{n_{2}}}$
+
+***Checking Equal Variances***
+
+```{r echo = FALSE}
+umpData <- ex0321
+boxplot(umpData[,c(1,3)], xlab="Life Length", ylab="Years", main="Umpire Lifepsan")
+```
+
+***Checking Equal Variances***
+
+```{r echo = FALSE, warning = FALSE, message = FALSE}
+require(beanplot)
+beanplot(umpData$Lifelength, umpData$Expected, method="jitter", col="skyblue", ylab="Years", main="Umpire Lifespan", xlab="Life Length And Expected")
+```
+
+***Independence***
+
+Recall that the standard error of the sampling distribution is $s/\sqrt{n}$, which implies that our level of certainty is proportional to the square root of the sample size. The lack of independence means that each observation is not representative of the entirety of the given set of information. This implies that, for dependent data, we will assume that the standard error is smaller than it should be, and hence overstate our confidence in our conclusions.
+
+Evaluating the independence assumption is largely a critical reasoning exercise, except when it comes to time and space.
+
+```{r echo = FALSE, fig.height = 5}
+data(AirPassengers)
+plot(AirPassengers)
+```
+
+Robustness means that the procedure should work even if assumptions are violated to a certain extent. Resistance means that the procedure should work even if we change a small portion of the data. Robustness is related to the population and resistance is related to the sample.
+
+```{r, echo = FALSE}
+x = 1:20
+y = 2^x
+par(mfrow=c(1,2))
+plot(x, y, type = "b", lwd=2, col = "purple", xlab = "Time (Hours)", ylab="Amoebas", main = "Exponential Growth")
+plot(x, log(y), type = "b", lwd=2, col = "purple", xlab="Time (Hours)", ylab="Logarithmically Transformed Amoebas", main = "Logarithmic Growth")
+```
+
+Transforming the data in such a way that changes the shape of the distribution while retaining the ordering is what is known as a monotone transformation. A monotonic transformation retains the order of values in a distribution. A nonlinear transformation changes the relative distance between the values in the distribution. A nonlinear transformation is often utilized to reduce the severity of the skew of a distribution. A nonlinear transformation is not necessarily defined for all values. A square root is defined only for values greater than or equal to zero while logarithms are defined only on values greater than zero.
+
+```{r, echo = FALSE}
+library(carData)
+income <- SLID
+par(mfrow=c(1,3))
+hist(income$wages, freq = FALSE, xlab = "Wages", main="Wage Distribution From SLID", col = "lightblue")
+hist(sqrt(income$wages), freq = FALSE, xlab = "Logarithmically Transformed Wages", main="Wage Distribution From SLID", col = "lightblue")
+hist(log(income$wages), freq = FALSE, xlab = "Square Root of Wages", main="Wage Distribution From SLID", col = "lightblue")
+
+library(e1071)
+skewness(income$wages, na.rm = TRUE)
+skewness(sqrt(income$wages), na.rm = TRUE)
+skewness(log(income$wages), na.rm = TRUE)
+```
+
+Other transformations include reciprocal transformations and logit ($\log(x/(1-X))$) transformations, which are practicable because they stabilize variances for proportions.

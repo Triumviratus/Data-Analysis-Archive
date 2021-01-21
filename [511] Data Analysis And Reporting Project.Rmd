@@ -1,0 +1,74 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+# Title: Data Analysis And Reporting Project
+## Name: Joshua Ryan Steenson
+## Due Date: 05 November 2020
+
+**Reading in the Data**
+
+```{r setup, include=FALSE}
+heart <- read.csv("heart.csv")
+attach(heart)
+```
+
+**Summary Statistics**
+
+```{r}
+tapply(ejection_fraction, high_blood_pressure, summary)
+tapply(ejection_fraction, high_blood_pressure, mean)
+tapply(ejection_fraction, high_blood_pressure, sd)
+```
+
+**Assigning Variables**
+
+```{r}
+Hyper.Yes <- heart$ejection_fraction[heart$high_blood_pressure==1]
+Hyper.No <- heart$ejection_fraction[heart$high_blood_pressure==0]
+```
+
+**Histogram Displays**
+
+```{r}
+par(mfrow=c(1,2))
+hist(Hyper.Yes, 
+     xlab="Ejection Fraction Volume", 
+     main="Hypertension")
+hist(Hyper.No, 
+     xlab="Ejection Fraction Volume", 
+     main="No Hypertension")
+```
+
+**Box Plot Displays**
+
+```{r}
+boxplot(ejection_fraction~high_blood_pressure, 
+        ylab="Ejection Fraction Volume", 
+        xlab="High Blood Pressure", 
+        main="Natural Scale")
+```
+
+**Logarithmic Box Plot**
+
+```{r}
+boxplot(log(ejection_fraction)~high_blood_pressure, 
+        ylab="Ejection Fraction Volume", 
+        xlab="High Blood Pressure", 
+        main="Logarithmic Scale")
+```
+
+**t-Test**
+
+```{r}
+# One-Sided Two-Sample t-Test
+t.test(ejection_fraction~high_blood_pressure, 
+       var.equal = TRUE, mu=0, 
+       alternative="greater", confidence=0.95)
+# Two-Sided Two-Sample t-Test
+t.test(ejection_fraction~high_blood_pressure, 
+       var.equal = TRUE, mu=0, 
+       alternative="two.sided", confidence=0.95)
+detach(heart)
+```

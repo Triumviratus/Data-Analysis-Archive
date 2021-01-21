@@ -1,0 +1,149 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+```
+
+***Wages And Race 2011***
+
+```{r message=FALSE}
+library(Sleuth3)
+wages <- ex1030
+names(wages)
+```
+
+***Wages And Race 2011***
+
+```{r}
+require(psych)
+pairs.panels(wages[,-5], ellipse=FALSE, main="Scatterplot Matrix")
+```
+
+***Wages And Race 2011***
+
+```{r message=FALSE}
+fit <- lm(log(WeeklyEarnings)~Region+MetropolitanStatus+Age+EducationCategory+Race, data=wages)
+summary(fit)
+library(car)
+car::vif(fit)
+Anova(fit)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,3,5))
+```
+
+***Wages And Race 2011***
+
+```{r}
+par(mfrow=c(1,2))
+plot(log(WeeklyEarnings)~Age, data=wages)
+plot(fit$resid~Age, data=wages)
+lines(loess.smooth(y=fit$resid, x=wages$Age), col="red", lwd=2)
+```
+
+***Wages And Race 2011***
+
+```{r}
+fit1 <- lm(log(WeeklyEarnings)~Region+MetropolitanStatus+Age+I(Age^2)+EducationCategory+Race, data=wages)
+summary(fit1)
+plot(fit1$resid~Age, data=wages)
+lines(loess.smooth(y=fit$resid, x=wages$Age), col="red", lwd=2)
+lines(loess.smooth(y=fit1$resid, x=wages$Age), col="blue", lwd=2)
+Anova(fit1)
+
+par(mfrow=c(2,2))
+plot(fit1, which=c(1,2,3,5))
+```
+
+***Wages And Race 2011***
+
+```{r}
+tstar <- qt(0.975, 4928)
+cat("95 Percent Confidence Interval: (", 0.817 - tstar*0.02965, ", ", 0.1817 + tstar*0.02965, ")\n")
+confint(fit1)
+```
+
+***Wages And Race 2011***
+
+```{r}
+Age2 <- wages$Age - 35
+Ed2 <- relevel(wages$EducationCategory, ref="BachelorsDegree")
+Reg2 <- relevel(wages$Region, ref="Northeast")
+fit2 <- lm(log(WeeklyEarnings)~Reg2+MetropolitanStatus+Age2+I(Age2^2)+Ed2+Race, data=wages)
+summary(fit2)
+```
+
+***Wages And Race 2011***
+
+```{r}
+newdata <- data.frame(Race="Black", EducationCategory="BachelorsDegree", Age=35, Region="Northeast", MetropolitanStatus="Metropolitan")
+predict(fit1, newdata, interval="confidence", se.fit=TRUE)
+```
+
+***Wages And Race 2011***
+
+```{r}
+newdata <- data.frame(Race=c("Black", "White", "Black"), EducationCategory=rep("BachelorsDegree", 3), Age=c(35,35,35), Region=c("Northeast", "Northeast", "South"), MetropolitanStatus=rep("Metropolitan", 3))
+predict(fit1, newdata, interval="confidence")
+```
+
+Researchers examined the relationship between clutch volume and adult body mass for six groups of birds, crocodiles, and dinosaurs. The question of interest asks which group of modern creatures most closely matches the relationship observed for Maniraptora (believed to be ancestors of modern birds).
+
+```{r}
+bird <- ex1031
+names(bird)
+table(bird$Group)
+bird$Group <- relevel(bird$Group, ref="Mani")
+
+par(mfrow=c(1,3))
+plot(ClutchVolume~BodyMass, data=bird)
+plot(log(ClutchVolume)~BodyMass, data=bird)
+plot(log(ClutchVolume)~BodyMass, data=bird)
+
+fit <- lm(log(ClutchVolume)~Group*log(BodyMass), data=bird)
+par(mfrow=c(2,2))
+plot(fit)
+
+fit_red <- lm(log(ClutchVolume)~log(BodyMass)+Group, data=bird)
+par(mfrow=c(2,2))
+plot(fit_red)
+
+summary(fit)
+summary(fit_red)
+
+anova(fit)
+anova(lm(log(ClutchVolume)~1, data=bird), fit)
+anova(fit_red, fit)
+anova(fit, fit_red)
+
+Group2 <- relevel(bird$Group, ref="BiP")
+summary(lm(log(ClutchVolume)~Group2*log(BodyMass), data=bird))
+```
+
+Statistical significance is a function of sample size as much as it is a function of effect sizes. Large differences can be non-significant if sample sizes are small.
+
+```{r}
+beta0 <- coef(fit)[1:6]
+beta1 <- coef(fit)[7:12]
+plot(0, type="n", xlim=c(-5.6, 6), ylim=c(6.5, 18.5), xlab="Logarithmic Transformation of Body Mass", ylab="Logarithmic Transformation of Clutch Volume")
+colvec <- rainbow(6)
+abline(beta0[1], beta1[1], col=colvec[1])
+for(i in 2:6){
+  abline(beta0[1]+beta0[i], beta1[1]+beta1[i], col=colvec[i])
+}
+legend("bottomright", col=colvec, lwd=2, legend=c("Mani", "BiP", "Croc", "Mat", "Othr", "Pat"))
+```
+
+In simple linear regression, $R^2$ is the proportion of variance in the response explained by the explanatory variable. This continues to be true in multiple regression, but it is the proportion of variability explained by all the explanatory variables together.
+
+```{r}
+flower <- case0901
+dim(flower)
+summary(lm(Flowers~Intensity+Time, data=flower))
+summary(lm(Flowers~Intensity*Time, data=flower))
+
+
+x <- matrix(rnorm(480), nrow=24)
+summary(lm(Flowers~Intensity*Time + x[,1], data=flower))
+summary(lm(Flowers~Intensity*Time + x[,1:10], data=flower))
+summary(lm(Flowers~Intensity*Time + x, data=flower))
+```
+

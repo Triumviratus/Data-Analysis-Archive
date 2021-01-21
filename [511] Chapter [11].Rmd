@@ -1,0 +1,300 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Sleuth3)
+library(tidyverse)
+library(MASS)
+tumor <- case1102
+```
+
+***Model Selection And Refinement***
+
+Today, we will walk through the process of model selection by utilizing the blood-brain barrier data. Recall that the question of interest asks how the ratio of antibody count in the brain tumor to antibody count in the liver varies with treatment (saline disruption or barrier disruption). We have two variables related to the design of the experiment, which are time and treatment. The others are covariates that may help deal with potential confounding variables due to the lack of randomization.
+
+```{r}
+head(tumor)
+```
+
+***Preliminaries***
+
+Before model selection, it is important to perform some exploratory analyses in order to identify required transformations and address obvious outliers, among other concerns that must be addressed.
+
+```{r message=FALSE}
+require(psych)
+pairs.panels(tumor, ellipse=FALSE)
+```
+
+Here, we have an obvious non-constant variance issue with our response relative to time.
+
+```{r}
+plot(tumor$Time, tumor$Brain/tumor$Liver)
+```
+
+***Transformation***
+
+```{r}
+tumor$resp <- log(tumor$Brain/tumor$Liver)
+plot(resp~Time, data=tumor)
+pairs.panels(tumor[,c(3,4,7:10)], ellipse=FALSE)
+```
+
+We can fit an initial model and examine diagnostics
+
+```{r}
+fit <- lm(resp~factor(Time)*Treatment+Days+Sex+Weight+Loss+Tumor, data=tumor)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+```
+
+Both normality and linearity appear to be adequate. There is some suggestion that 34 is an outlier, but it is not radically different from the rest of the observations. In order to cover our bases, we must determine what happens when it is excluded.
+
+***Checking Outliers***
+
+```{r}
+tumor[c(30:34),]
+fit34 <- lm(resp~factor(Time)*Treatment+Days+Sex+Weight+Loss+Tumor, data=tumor[-34,])
+round(cbind(fit34$coef, fit$coef),2)
+summary(fit)
+```
+
+The coefficients that changed are extremely non-significant (they have large *p*-values). The process with the observation should be included.
+
+```{r}
+plot(resp~log(Time), data=tumor)
+fit <- lm(resp~log(Time)*Treatment+Days+Sex+Weight+Loss+Tumor, data=tumor)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+```
+
+In order to determine whether we require the covariates in the model, we must determine whether there are any confounding variables that the covariates are accounting for. We might need to create one or more partial residual plots in order to examine whether the relationships with some of the covariates are nonlinear.
+
+```{r}
+par(mfrow=c(3,1))
+resid <- fit$residuals
+resid.mod <- resid + fit$coef[7]*tumor$Loss
+plot(resid.mod~Loss, data=tumor)
+resid.mod <- resid + fit$coef[6]*tumor$Weight
+plot(resid.mod~Weight, data=tumor)
+resid.mod <- resid + fit$coef[8]*tumor$Tumor
+plot(resid.mod~Tumor, data=tumor)
+
+# F-Test
+fit.red <- lm(resp~log(Time)*Treatment, data=tumor)
+anova(fit.red, fit)
+library(carData)
+Anova(fit)
+```
+
+***Model Refinement by *p*-value***
+
+```{r}
+fit1 <- lm(resp~log(Time)*Treatment+Days+Weight+Loss+Tumor, data=tumor)
+Anova(fit1)
+
+fit2 <- lm(resp~log(Time)+Treatment+Days+Loss+Tumor+Weight, data=tumor)
+Anova(fit2)
+
+fit3 <- lm(resp~log(Time)+Treatment+Loss+Tumor+Days, data=tumor)
+Anova(fit3)
+
+fit4 <- lm(resp~log(Time)+Treatment+Loss+Tumor, data=tumor)
+Anova(fit4)
+
+fit5 <- lm(resp~log(Time)+Treatment+Tumor, data=tumor)
+Anova(fit5)
+
+fit6 <- lm(resp~factor(Time)+Treatment, data=tumor)
+Anova(fit6)
+```
+
+***Wages And Race***
+
+```{r}
+wages <- ex1030
+names(wages)
+
+fit <- lm(log(WeeklyEarnings)~Region+MetropolitanStatus+Age+I(Age^2)+EducationCategory+Race, data=wages)
+summary(fit)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+```
+
+***Outliers***
+
+```{r}
+outliers <- which(fit$resid < -3)
+wages[outliers,]
+```
+
+All these individuals report weekly earnings of under 20 USD.
+
+```{r}
+summary(wages$WeeklyEarnings)
+```
+
+But assuming all is well and we desire to include these individuals, we should again see how their inclusion affects the model.
+
+```{r}
+fit2 <- lm(log(WeeklyEarnings)~Region+MetropolitanStatus+Age+I(Age^2)+EducationCategory+Race, data=wages[-outliers,])
+summary(fit2)
+
+round(cbind(fit$coef, fit2$coef),3)
+cbind(summary(fit)$coef[,4], summary(fit2)$coef[,4])
+
+Anova(fit2)
+```
+
+***Alcohol Metabolism***
+
+```{r}
+alcohol <- case1101
+alcohol %>%
+  ggplot(aes(x=Gastric, y=Metabol, col=Sex, shape=Alcohol)) + geom_point()
+
+fit1 <- lm(Metabol~Gastric*Sex*Alcohol, data=alcohol[-c(31,32),])
+summary(fit1)
+Anova(fit1)
+
+fit2 <- lm(Metabol~Gastric*Sex*Alcohol-Gastric:Sex:Alcohol, data=alcohol[-c(31,32),])
+summary(fit2)
+Anova(fit2)
+
+fit3 <- lm(Metabol~Gastric*Sex*Alcohol-Gastric:Sex:Alcohol-Sex:Alcohol, data=alcohol[-c(31,32),])
+summary(fit3)
+Anova(fit3)
+
+fit4 <- lm(Metabol~Gastric*Sex*Alcohol-Gastric:Sex:Alcohol-Sex:Alcohol-Gastric:Alcohol, data=alcohol[-c(31,32),])
+summary(fit4)
+Anova(fit4)
+
+fit5 <- lm(Metabol~Gastric*Sex, data=alcohol[-c(31,32),])
+summary(fit5)
+Anova(fit5)
+
+fit6 <- lm(Metabol~Gastric+Sex, data=alcohol[-c(31,32),])
+summary(fit6)
+Anova(fit6)
+```
+
+Leverage is defined as the distance of the explanatory variables of an observation from the average. The studentized residual is the quotient of the observed residual over the standard deviation of the observed residual. It gives a measure of how many standard deviations a residual is from the prediction. The distance metric named after Ralph Dennis Cook describes the change in regression coefficients when leaving out an observation. Of the three, the distance metric named after Ralph Dennis Cook is the most informative about how problematic outliers might be. It combines information from leverage and the studentized residual.
+
+***Electrical Insulation***
+
+```{r pressure, echo=FALSE}
+volt <- case0802
+volt %>%
+  ggplot(aes(x=Voltage, y=Time, col=Group)) + geom_point()
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+fit <- lm(Time~Voltage, data=volt)
+summary(fit)
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+par(mfrow=c(3,1))
+plot(studres(fit))
+plot(cooks.distance(fit))
+plot(hatvalues(fit))
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+fit3 <- lm(Time~Voltage, data=volt[-3,])
+par(mfrow=c(2,2))
+plot(fit3, which=c(1,2,4,5))
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+fit32 <- lm(Time~Voltage, data=volt[-c(2,3),])
+par(mfrow=c(2,2))
+plot(fit32, which=c(1,2,4,5))
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+fit328 <- lm(Time~Voltage, data=volt[-c(2,3,8),])
+par(mfrow=c(2,2))
+plot(fit328, which=c(1,2,4,5))
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+volt %>%
+  ggplot(aes(x=Voltage, y=Time)) + geom_point()
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+volt %>%
+  ggplot(aes(x=Voltage, y=log(Time))) + geom_point()
+```
+
+In an experimental study, electrical insulation was subjected to differing levels of constant voltage, and the time to the breakdown of the insulation was recorded.
+
+```{r}
+fit <- lm(log(Time)~Voltage, data=volt)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+```
+
+***Partial Residual Plots***
+
+```{r}
+brain <- case0902
+brain$logBrain <- log(brain$Brain)
+brain$logBody <- log(brain$Body)
+brain$logGestation <- log(brain$Gestation)
+brain$logLitter <- log(brain$Litter)
+require(psych)
+pairs.panels(brain[,c(6:9)], ellipse=FALSE)
+```
+
+We are interested in a plot that exhibits the relationship between variables after controlling the effect of the other variables, which is called the partial residual plot. The basic idea of the partial residual plot is to remove the associations of the response variables or the explanatory variables with other explanatory variables, and examine the scatter plot of the remaining data points to see if it has a linear form or outliers, among other features. The process involves fitting the full model and extracting the residuals.
+
+```{r}
+fit <- lm(log(Brain)~log(Body)+log(Gestation)+log(Litter), data=brain)
+summary(fit)
+res <- fit$residuals
+
+resMod <- res + log(brain$Gestation)*fit$coef[3]
+
+par(mfrow=c(1,2))
+plot(log(Brain)~log(Gestation), data=brain)
+plot(resMod~log(Gestation), data=brain)
+```
+
+After controlling for litter size and body weight, the association between brain size and gestation is definitely weaker, but still approximately linear with no extreme values.
+
+```{r}
+blood <- case1102
+blood %>%
+  ggplot(aes(x=Weight, y=log(Brain/Liver))) + geom_point()
+
+par(mfrow=c(1,2))
+fit <- lm(log(Brain/Liver)~factor(Time)+Treatment+Days+Sex+Weight+Loss+Tumor, data=blood)
+plot(fit, which=c(4,5))
+
+par(mfrow=c(1,2))
+plot(log(Brain/Liver)~Weight, data=blood, main="Scatter Plot")
+resMod <- fit$resid + blood$Weight*fit$coef[8]
+plot(log(Brain/Liver)~resMod, data=blood, main = "Partial Residual Plot")
+```
+

@@ -1,0 +1,141 @@
+***Introduction to Statistics: Radon***
+
+```{r}
+
+# Statistics is a science that is concerned with posing questions, comparing
+# data, quantifying uncertainty, displaying, organizing, and interpreting data,
+# statistical inferences, statistical conclusions, and study designs.
+
+# The types of inferences we can formulate depend on the design of the study.
+# Randomization is incorporated by randomly assigning treatments to groups.
+# Randomization is also incorporated by randomly selecting units from a given
+# population of interest.
+
+# Observational studies are characterized by a lack of control over treatment
+# conditions. When a situation is considered confounding, there is a non-causal
+# association that is observed between a given treatment and a response as a
+# result of the influence of a third variable.
+
+# For example, if we simply observe cell phone utilization and brain cancer,
+# any effect of radiation on the occurrence of brain cancer is confounded by
+# variables such as age, occupation, and place of residence.
+
+# Experiments are characterized according to the manner by which investigators
+# control most aspects of the study. This is the gold standard of evidence, but
+# it does not preclude the introduction of bias. Well-designed studies take
+# steps to defeat bias.
+
+# Radon is a naturally-occurring carcinogen that is known to cause lung cancer.
+# A study coordinated by the EPA took into account 80,000 houses in order to
+# identify areas with high radon exposure. First, take a random sample of 45
+# data points and compute the average. Next, take a sample of 45 data points
+# by taking every fifth observation, starting with 5. Compute the average.
+
+radon <- read.csv("radon.csv", header=T)
+mean(sample(radon[,1], 45)) # Random Sampling
+
+mean(radon[seq(5, 225, by=5), 1]) # Interval Sampling
+
+# For every fifth observation in the data, the household does not have a
+# basement. Because radon comes from underground, houses with basements tend
+# to have higher measurements. Therefore, interval sampling based on taking
+# every fifth observation is considered to be a biased sampling method.
+```
+
+***Introduction to Statistics: Permutation Testing***
+
+```{r}
+# Generally, the dictionary defines random as proceeding, created, or occurring
+# without definite aim, reason, or pattern.
+
+# In statistics, whereas random sampling utilizes a chance mechanism to select
+# units from the population, random assignment utilizes a chance mechanism to
+# assign treatments to units.
+
+# A simple random sample is comprised of randomly selected individuals. Each
+# individual in the population has the same probability of being in the sample.
+
+# The distribution of the test statistic is dependent on the random mechanism.
+# Knowledge of this distribution under the null allows us to evaluate how
+# unusual the observed result is. This is the basis for statistical inference.
+
+# Both randomization and permutation distributions utilize random shuffling of
+# something to approximate the sampling distribution of the test statistic.
+# The observed statistic is compared to the quantiles of the approximated
+# distribution in order to formulate the inference.
+
+# What we shuffle depends on our probability model. Random allocation to groups
+# involves shuffling the group assignment. Random sampling from populations
+# involves shuffling the outcome values. We are, in effect, replicating the
+# study numerous times as if our sample were the population.
+
+# The null hypothesis implies that groups are interchangeable. Treatment has
+# no effect, so the means should be the same. The null hypothesis also implies
+# that populations are equivalent. This means that there is no difference in
+# the outcome between populations, so the means should be the same.
+
+# With simple random sampling (SRS), every unit has equal probability of being 
+# sampled. With cluster sampling, a unit is a group instead of an individual.
+# with random cluster sampling, the clusters are created by the investigator.
+# As long as the assignment to clusters is random, each unit still has equal
+# probability of being sampled. With systematic (interval) sampling, if you
+# choose your starting point at random and then take units at equal intervals,
+# then it is a random sample. Otherwise, it is not.
+
+library(Sleuth3)
+data(ex0126)
+votes <- ex0126
+names(votes)
+
+summary(votes)
+
+hist(votes$PctPro)
+par(mfrow=c(1,2))
+hist(votes$PctPro, breaks=5)
+hist(votes$PctPro, breaks=30)
+
+# Reset to 1 row, 1 column plotting window
+par(mfrow=c(1,1))
+boxplot(votes$PctPro~votes$Party) # Box plots for each Party
+
+# Data set with observations where Party is equal to NA
+votes[is.na(votes$Party)==TRUE,]
+# Data set with non-missing Party data for Republicans and Democrats
+votesRD <- votes[(votes$Party=="R" | votes$Party=="D")
+                 &is.na(votes$Party)==FALSE,]
+
+# Data set with non-missing Party data for Independents
+VotesI <- votes[(votes$Party=="I")&is.na(votes$Party)==FALSE,]
+
+par(mfrow=c(1,2))
+hist(votesRD$PctPro[votesRD$Party=="R"], main="Republicans Voting History")
+hist(votesRD$PctPro[votesRD$Party=="D"], main="Democrats Voting History")
+
+par(mfrow=c(1,1))
+boxplot(votesRD$PctPro~votesRD$Party, col=3, 
+        main="Percent Proponent Voting History of Party")
+
+set.seed(207819) # Set seed for reproducible results
+ReshuffledMeans <- c() # Initialize list to store simulated test statistics
+Reshuffles <- votesRD # Create new data frame to store permutations
+nreps = 5000 # 5000 iterations
+
+for (i in 1:nreps){
+  shuffle <- sample(Reshuffles$PctPro, size=nrow(Reshuffles), replace=FALSE)
+  ReshuffledMeans$SimMeans[i] <- 
+    mean(shuffle[Reshuffles$Party=="D"]) -
+    mean(shuffle[Reshuffles$Party=="R"])
+}
+
+hist(ReshuffledMeans$SimMeans, 
+main="Simulated Differences in Mean Percents Under Null (5000 Permutations)", 
+xlab="Simulated Differences in Mean Percents (Democrats Minus Republicans)")
+
+obs.diff <- mean(votesRD$PctPro[votesRD$Party=="D"]) - 
+            mean(votesRD$PctPro[votesRD$Party=="R"])
+obs.diff
+
+mean(ReshuffledMeans$SimMeans>=obs.diff | ReshuffledMeans$SimMeans<=-obs.diff)
+```
+
+All possible samples of size \emph{n} have the same probability of being drawn.

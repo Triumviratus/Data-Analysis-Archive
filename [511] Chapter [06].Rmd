@@ -1,0 +1,191 @@
+
+```{r setup, include=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(tidyverse)
+library(DescTools)
+```
+
+Recall that we construct a confidence interval for a difference in means as $\left(\bar{x}_{1}-\bar{x}_{2}\right)\pm t^*_{df,(1-C)/2} \cdot SE$, where $\left(\bar{x}_{1}-\bar{x}_{2}\right)$ is the statistic, $t^*_{df,(1-C)/2}$ is the *t*-multiplier, and $SE$ is the standard error of the statistic. This procedure guarantees that $C$ percent of the time, a single interval built in this manner will include the true difference in the population means.
+
+Frequently, we will desire to formulate several comparisons between groups. If they are not pre-specified hypotheses, we need to account for checking many differences.
+
+```{r}
+n=1:100
+x=1-(0.95^n)
+plot(n, x, type="l", lwd=2, ylab="P(errors)")
+abline(h=0.05, col="red", lwd=2)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter. The individual error rate is the failure rate of a procedure for constructing a single confidence interval. A family-wise confidence level refers to the success rate of a procedure for constructing a group of confidence intervals simultaneously, with success being defined such that all intervals contain the respective population parameters. The family-wise error rate is the failure rate of a procedure for constructing a group of confidence intervals simultaneously.
+
+The basic idea of multiple comparisons is to widen your confidence intervals so that the overall rate of errors is no more than $1-C(0.05)$. This is how we increase the probability that a confidence interval includes the true value.
+
+For he common element, take the statistic and standard error as given values, but change the multiplier to protect a family-wise error rate. Among the numerous options for multiple comparisons in this capacity, they all vary in the strictness of the adjustment, and which family-wise error rate they control.
+
+```{r warning=FALSE, message=FALSE}
+insects <- read_csv('insects.csv')
+insect.fit <- aov(Insects~Color, data=insects)
+summary(insect.fit)
+# Tukey HSD
+TKfit <- TukeyHSD(insect.fit)
+TKfit
+plot(TKfit)
+ScFit <- ScheffeTest(insect.fit)
+ScFit
+plot(ScFit)
+```
+
+If you encounter another multiple corrections approach in research, then you can probably reproduce it by utilizing one of these methods.
+
+```{r, eval=FALSE}
+p.adjust.methods = c("holm", "hochberg", "hommel", 
+                     "bonferroni", "BH", "BY", "fdr", "none")
+```
+
+If you encounter another multiple corrections approach in research, then you can probably reproduce it by utilizing one of these methods.
+
+```{r}
+pairwise.t.test(insects$Insects, insects$Color, p.adjust.method="bonferroni")
+bonf <- data.frame(diff=TKfit$Color[,1])
+se_pooled <- sqrt(summary(insect.fit)[[1]][2,3])
+se_pair <- se_pooled*sqrt((1/6)+(1/6))
+mult <- qt((1-0.025)/choose(4,2), 20)
+bonf <- cbind(bonf, lci=bonf[,1]-se_pair*mult, uci=bonf[,1]+se_pair*mult)
+bonf
+
+plot(bonf$diff, 6:1, pch="|", xlab="Difference in Means", 
+     ylab="Response Variable", main="Bonferroni", axes=FALSE, 
+     xlim=c(min(bonf$lci), max(bonf$uci)))
+abline(h=1:6, col="grey90")
+points(bonf$uci, 6:1, pch="|")
+points(bonf$lci, 6:1, pch="|")
+for(i in 1:6){lines(bonf[i,2:3], c(7-i,7-i), lwd=2)}
+abline(v=0, lty=2)
+axis(1)
+axis(2, labels=row.names(bonf), at=6:1)
+```
+
+***Side-By-Side Comparison***
+
+```{r, echo=FALSE}
+par(mfrow=c(1,3))
+plot(TKfit, sub="Tukey-Kramer")
+plot(ScFit, sub="Scheffe")
+plot(bonf$diff, 6:1, pch="|", xlab="Difference in Means", 
+     ylab="Response Variable", main="Bonferroni", axes=FALSE, 
+     xlim=c(min(bonf$lci), max(bonf$uci)))
+abline(h=1:6, col="grey90")
+points(bonf$uci, 6:1, pch="|")
+points(bonf$lci, 6:1, pch="|")
+for(i in 1:6){lines(bonf[i,2:3], c(7-i,7-i), lwd=2)}
+abline(v=0, lty=2)
+axis(1)
+axis(2, labels=row.names(bonf), at=6:1)
+box()
+
+n.groups=4
+n=24
+C=0.05
+sqrt((n.groups-1)*qf(1-C, n.groups-1, n-n.groups))
+
+qt(1-(C/2), n-n.groups)
+qt(1-(C/2)/choose(n.groups,2), n-n.groups)
+```
+
+Below is the code for a contrast function that computes the point estimate, standard error, *p*-value (testing the null of $\gamma$), and confidence bounds for a test of a linear combination of means.
+
+```{r}
+lincomb.fun <- function(coef.vec, data, gamma=0, conf.level=0.95){
+  val <- data[,1]
+  lbls <- data[,2]
+  n.i <- table(lbls)
+  n <- sum(n.i)
+  df <- n-length(n.i)
+  ybar <- tapply(val, lbls, mean)
+  sdev <- tapply(val, lbls, sd)
+  s.p <- sqrt(sum((n.i-1)*(sdev^2))/df)
+  g <- sum(coef.vec*ybar)
+  SE.g <- s.p*sqrt(sum((coef.vec^2)/n.i))
+  t.stat <- (g-gamma)/SE.g
+  if(t.stat<0){pval <- 2*pt(t.stat, df)}
+  else {pval<-2*pt(t.stat, df, lower.tail=FALSE)}
+  alpha <- 1-conf.level
+  CI <- g+c(-1,1)*qt((1-alpha)/2,df)*SE.g
+  return(unlist(list(g=g, SE.g=SE.g, Pvalue=pval, CI=CI)))
+}
+```
+
+Suppose the director of a drug rehabilitation center desires to compare the effectiveness of three treatments in order to improve manual dexterity among patients. She selects a random sample of 30 applicants to the program, 15 male and 15 female, and assigns them to each of the three treatments, blocking by gender. The response is the score on the Stanford Test of Manual Dexterity after five weeks of treatment. While we cannot randomize biological sex, one question of interest is whether treatment response varies by biological sex.
+
+```{r dexterityDat}
+dexterity <- read.csv("dexterity.csv")
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r boxes, echo=FALSE}
+summary(dexterity)
+par(mfrow=c(1,2))
+boxplot(Score~Treatment, data=dexterity)
+boxplot(Score~Sex, data=dexterity)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r interact}
+dexterity$groupInt <- paste(dexterity$Treatment, dexterity$Sex, sep="")
+n.i <- table(dexterity$groupInt)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r newbox, echo=FALSE}
+boxplot(Score~groupInt, data=dexterity)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r anovas}
+fit1 <- aov(Score~factor(groupInt), data=dexterity)
+fit2 <- aov(Score~factor(Treatment), data=dexterity)
+summary(fit1)
+summary(fit2)
+anova(fit2, fit1)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r}
+par(mfrow=c(1,2))
+plot(lm(Score~factor(groupInt), data=dexterity), which=c(1,2))
+```
+
+***Calculate Contrasts***
+
+```{r contrasts}
+table(dexterity$groupInt)
+c.vec <- c(0.5, 0.5, -0.5, -0.5, 0, 0)
+newData <- data.frame(dexterity$Score, dexterity$groupInt)
+lincomb.fun(c.vec, data=newData)
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r}
+c.vec <- c(0.5, 0.5, -0.5, -0.5, 0, 0)
+gpmeans <- tapply(dexterity$Score, dexterity$groupInt, mean)
+c.coef <- sum(c.vec*gpmeans)
+c.sd <- sqrt(1.083)*sqrt(sum((c.vec^2)/5))
+c.coef + qt(0.975, length(dexterity$Score)-6)*c.sd
+c.coef - qt(0.975, length(dexterity$Score)-6)*c.sd
+c.coef
+2*(1-pt(c.coef/c.sd, length(dexterity$Score)-6))
+```
+
+An individual confidence level is defined as the success rate of a procedure for constructing a single confidence interval, with success being defined such that the interval contains the population parameter.
+
+```{r contrasts2}
+c.vec <- c(1/3, -1/3, 1/3, -1/3, 1/3, -1/3)
+lincomb.fun(c.vec, data=newData)
+```
+

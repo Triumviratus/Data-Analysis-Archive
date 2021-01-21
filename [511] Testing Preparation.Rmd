@@ -1,0 +1,1789 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+library(broom)
+library(car)
+library(carData)
+library(aplpack)
+library(knitr)
+library(Sleuth3)
+library(psych)
+library(effects)
+```
+
+***Summary Statistics Computations***
+
+```{r}
+mean(cars$speed)
+sd(cars$dist)
+var(cars$speed)
+median(cars$dist)
+mode(cars$speed)
+quantile(cars$dist, c(0.25, 0.75))
+56-26
+```
+
+***Graphical Plot Creation***
+
+Generate a set of 30 random observations from a normal distribution with a mean of zero and a standard deviation of two, and another set of 30 observation from a normal distribution with a mean of 3 and a variance of 4.
+
+```{r}
+set.seed(111)
+set1 <- rnorm(30, mean=0, sd=2)
+set2 <- rnorm(30, mean=3, sd=2)
+stem(set1)
+
+boxplot(set1, set2, col=c(3,4), main="Side-By-Side Box Plots")
+
+par(mfrow=c(2,1))
+hist(set1, col=3, nclass=10, prob=T, main="Set 1 Histogram")
+hist(set2, col=4, nclass=5, prob=T, main="Set 2 Histogram")
+
+par(mfrow=c(2,1))
+hist(set1, col=3, nclass=6, prob=T, main="Set 1 Histogram")
+boxplot(set1, col=3, horizontal=TRUE)
+
+par(mfrow=c(2,1))
+plot(set1, set2, type="n", main="Scatter Plot", xlab="Set 1 Data", ylab="Set 2 Data")
+points(set1, set2, pch=18, col=2)
+plot(set1, set2, pch=18, col=2, main="Scatter Plot", xlab="Set 1 Data", ylab="Set 2 Data")
+```
+
+***Writing a Scope of Inference***
+
+Researchers took independent random samples from two populations of police officers and measured the level of lead concentration in their blood. The sample of 126 police officers subjected to constant inhalation of automobile exhaust fumes in downtown Cairo had an average blood level concentration of $19.2 \frac{\mu g}{dl}$ and a standard deviation of $7.5 \frac{\mu g}{dl}$. The control sample of 50 police officers from the Cairo suburb of Abbasia, with no history of exposure, had an average concentration of $18.2 \frac{\mu g}{dl}$ and a standard deviation of $5.8 \frac{\mu g}{dl}$. Write a scope of inference for this study.
+
+Since the officers were chosen by utilizing simple random sampling in each population, the results of the study can be generalized to police officers in Cairo and Abbasia in general (or whichever subset of those were sampled from). It is not necessarily the case that the results can be extrapolated beyond those populations, though you might argue that you could expect similar results among individuals with similar working conditions. It was not, however, a randomized experiment, so we cannot definitively conclude that the place of work caused the difference in lead concentrations in the two populations.
+
+***Exercise 1.16***
+
+```{r}
+data(ex0116)
+GDP <- ex0116
+names(GDP)
+summary(GDP)
+boxplot(GDP$PerCapitaGDP, 
+        main="Box Plot of Per Capita GDP for 228 Countries in 2020 ($U.S.)", ylab="GDP Per Capita ($U.S.)")
+```
+
+The display attained here has the potential to be different from what the standard display is accepted to be because answers may vary. After all, there are many factors to consider, such as the scale being measured in thousands of United States dollars, extreme points that are measured at different sizes, and whether the sample size is included.
+
+```{r}
+hist(GDP$PerCapitaGDP, col=3, nclass=15, prob=T, main="Histogram of per capita GDP for 228 Countries in 2010 ($U.S.)", xlab = "GDP per Capita ($U.S.)")
+```
+
+The default bin width is equal to 20,000 United States dollars.
+
+```{r}
+hist(GDP$PerCapitaGDP, breaks=seq(0,200000,by=5000), main="Histogram of per capita GDP for 228 Countries in 2010 ($U.S.)", xlab="GDP Per Capita ($U.S.)")
+```
+
+***Exercise 1.17***
+
+```{r}
+GroupA <- combn(1:7, 4) # Attain all combinations of the four elements of the indexes of the vector
+scores <- c(68, 77, 82, 85, 53, 64, 71)
+obs_diff <- mean(scores[1:4])-mean(scores[5:7])
+# Compute the observed difference in the means
+
+group_diffs <- rep(NA, 35) # Set up storage
+for(i in 1:35){
+  # Cycle through permutations
+  group_diffs[i] <- mean(scores[GroupA[,i]])-mean(scores[setdiff(1:7, GroupA[,i])])
+}
+
+GroupA
+group_diffs
+t.test(GroupA, alternative=("two.sided"))
+
+hist(group_diffs, main="Randomization Distribution")
+abline(v = obs_diff, col = 2)
+abline(v = -obs_diff, col = 2)
+
+p.value <- sum(group_diffs >= obs_diff | group_diffs <= -obs_diff)/35
+p.value
+
+abline(v=obs_diff, lwd=2, col=2)
+number.gt <- sum(group_diffs >= obs_diff)
+number.lt <- sum(group_diffs <= -obs_diff)
+(number.gt + number.lt)/35
+sort(group_diffs)
+```
+
+This study provides weak evidence that receiving Study Guide A rather than Study Guide B caused students in this study to score higher on the examination. Since this was a randomized experiment, we may infer that the difference in examination scores was caused by the difference in the study guides. The students were volunteers and not randomly selected from any population, so it probably is not reasonable to extend these results to any other group.
+
+***Exercise 1.18***
+
+```{r}
+creativity <- case0101
+
+x <- sample(1:47, replace=FALSE)
+creativity$random=x
+creativity$group=ifelse(creativity$random<25, print("Group 1"), print("Group 2"))
+creativity[order(creativity$random),]
+group_diff <- mean(creativity$Score[1:24])-mean(creativity$Score[25:47])
+group_diff
+
+x <- sample(1:47, replace=FALSE)
+creativity$random=x
+creativity$group=ifelse(creativity$random<25, print("Group 1"), print("Group 2"))
+creativity[order(creativity$random),]
+group_diff <- mean(creativity$Score[1:24])-mean(creativity$Score[25:47])
+group_diff
+
+x <- sample(1:47, replace=FALSE)
+creativity$random=x
+creativity$group=ifelse(creativity$random<25, print("Group 1"), print("Group 2"))
+creativity[order(creativity$random),]
+group_diff <- mean(creativity$Score[1:24])-mean(creativity$Score[25:47])
+group_diff
+
+x <- sample(1:47, replace=FALSE)
+creativity$random=x
+creativity$group=ifelse(creativity$random<25, print("Group 1"), print("Group 2"))
+creativity[order(creativity$random),]
+group_diff <- mean(creativity$Score[1:24])-mean(creativity$Score[25:47])
+group_diff
+
+x <- sample(1:47, replace=FALSE)
+creativity$random=x
+creativity$group=ifelse(creativity$random<25, print("Group 1"), print("Group 2"))
+creativity[order(creativity$random),]
+group_diff <- mean(creativity$Score[1:24])-mean(creativity$Score[25:47])
+group_diff
+```
+
+***Exercise 1.26***
+
+```{r}
+votes <- ex0126
+names(votes)
+summary(votes)
+
+votes_D <- subset(votes, Party=="D")
+votes_R <- subset(votes, Party=="R")
+
+print("Summary of Democrats")
+summary(votes_D$PctPro)
+sd(votes_D$PctPro)
+print("Summary of Republicans")
+summary(votes_R$PctPro)
+sd(votes_R$PctPro)
+
+boxplot(data=votes, PctPro~Party, col=c("blue", "yellow", "red"), ylab="Percent Pro-Environment Votes")
+```
+
+The observed difference between Republicans and Democrats is calculated as 69.7 percent.
+
+***Taking a Simple Random Sample***
+
+Take a simple random sample of $n=10$ states without replacement and report the selected states.
+
+```{r}
+data(state)
+state.name
+sample(state.name, size = 10, replace = FALSE)
+
+ten.states <- sample(state.name, 10, replace=FALSE, prob=NULL)
+ten.states
+```
+
+***Random Assignment***
+
+A researcher performed a comparative experiment on laboratory rats. Rats were assigned to the first group by reaching into a cage and pulling them out without considering which one to select. Determine whether this is an appropriate random assignment method and explain your reasoning.
+
+This is not an appropriate random assignment method. This is a convenience sample. There are implicit biases involved in where a researcher would place their hand in a cage containing rats. There is also bias in individual rat behavior. Perhaps the more aggressive or adventurous rats would congregate in the middle of the cage while the more nervous rats would linger in the peripheries of the cage, rendering this a non-random sampling of rats with differing behavioral patterns. This type of sampling is known as haphazard sampling. In order to render the assignment method truly random, you could randomly assign a rat a number with a random number generator and select that rat specifically. Even if there are no obvious confounding factors, they cannot be ruled out. Random assignment would, with high probability, eliminate such concerns.
+
+***Exercise 2.20***
+
+```{r}
+chol <- ex0112
+
+mean(chol$BP[chol$Diet=="FishOil"])
+sd(chol$BP[chol$Diet=="FishOil"])
+mean(chol$BP[chol$Diet=="RegularOil"])
+sd(chol$BP[chol$Diet=="RegularOil"])
+
+tapply(chol$BP, chol$Diet, mean)
+tapply(chol$BP, chol$Diet, sd)
+
+qt(0.975, df=6)
+
+t.test(chol$BP[chol$Diet=="FishOil"], chol$BP[chol$Diet=="RegularOil"], var.equal = T, alternative = "greater")
+
+t.test(chol$BP[chol$Diet=="FishOil"])
+```
+
+This question involves statistical inference by uncovering the black box. For the fish oil diet group, complete the following exercises. 
+
+First, compute the average standard deviation and the sample standard deviation. Determine the degrees of freedom that are associated with the sample standard deviation, $s_{2}$. 
+
+The average standard deviation is calculated as $5.8554$. The sample standard deviation ($s_{p}=\sqrt\frac{((n_{1}-1)*s^{2}_{1}) + ((n_{2}-1)*s^{2}_{2})}{n_{1}+n_{2}-2}$) is calculated as 7. The degrees of freedom associated with $s_{2}$ ($n_{1}+n_{2}-2$) are calculated as 6.
+
+Next, compute the standard error for the average from this group: $SE(\bar{Y}_{2})=s_{2}/(\sqrt{n_{2}})$. 
+
+The standard error is calculated 2.21.
+
+Next, construct a 95 percent confidence interval for $\mu_{2}$ as $\bar{Y}_{2}+t_{d}(0.975)SE(\bar{Y}_{2})$, where $d$ is the degrees of freedom associated with $s_{2}$. 
+
+The 95 percent confidence interval for the fish oil treatment was calculated as $1.156086$ for the lower bound and $11.986771$ for the upper bound.
+
+For the hypothesis that $\mu_{2}$ is zero, construct the $t$-statistic $\bar{Y}_{2}/SE(\bar{Y}_{2})$. 
+
+the $t$-statistic is equal to $2.9693$. The $p$-value at $0.975$ is equal to $2.4469$. The $t$-statistic value is greater than the estimated $p$-value for $6$ degrees of freedom. Therefore, we have strong evidence to conclude that $\mu_{2}=0$.
+
+Find the two-sided $p$-value as the proportion of values from a $t_{d}$-distribution farther from zero than this value.
+
+In addition, answer the following questions. First, determine whether there is any evidence that the mean reduction for this group is different from zero. Second, determine what the typical reduction in blood pressure that is expected from this type of diet (for individual such as these male individuals) is. Provide a 95 percent confidence interval.
+
+The calculated mean is $\mu = \frac{8+12+10+14+2+0+0}{7} = 6.571429$.
+
+The calculated standard deviation is $\sigma = \sqrt{\frac{(8-6.571429)^2 + \cdot\cdot\cdot + (0-6.571429)^2}{7-1}} = 5.8554$.
+
+The degrees of freedom are calculated as $7-1=6$.
+
+$SE(Y_1) = \frac{s_{1}}{\sqrt{n_{1}}} = \frac{5.8554}{\sqrt{7}} = 2.213133$
+
+$(6.571429 - (\text{qt}(0.975, 6)\times2.213133), 6.571429 + (\text{qt}(0.975, 6)\times2.213133))$
+
+$(6.571429 - (2.446912\times2.213133), 6.571429 + ((2.446912\times2.213133))$
+
+$(1.156087, 11.98677)$
+
+$t = \frac{6.571429}{2.213133} = 2.969288$
+
+The $p$-value is equal to $\text{pt}(-2.969288, \text{df}=6, \text{lower}=\text{TRUE}) + \text{pt}(2.969288, \text{df}=6, \text{lower}=\text{FALSE})$, which is equal to $0.02498054$.
+
+There is moderate evidence that the mean reduction in blood pressure when taking fish oil is different from two (the two-sided $p$-value from a one sample $t$-test is equal to 0.02498).
+
+The estimated mean reduction in blood pressure expected from this type of diet for individuals such as these adult males is $6.571429$ millimeters. The 95 percent confidence interval is $(1.156087, 11.98677)$.
+
+***Reading Statistical Output***
+
+Below is output from a pooled two-sample $t$-test:
+
+\begin{verbatim}
+t.test(x,y,var.equal=T)
+  Two Sample t-test
+data: x and y
+t = 1.0732, df = 173, p-value = 0.2847
+alternative hypothesis: true difference in means is not equal to 0.
+95 percent confidence interval:
+ -0.2675043  0.9050331
+sample estimates:
+mean of x mean of y
+ 9.807120  9.488356
+\end{verbatim}
+
+Utilize this output to answer the following questions. 
+
+First, state the null and alternative hypotheses stated in terms of $\mu_{x}$ and $\mu_{y}$. 
+
+$H_{0}: \mu_{x} = \mu_{y}$
+
+$H_{a}: \mu_{x} \neq \mu_{y}$
+
+Next, determine the total sample size. 
+
+$n = \text{df} + 2 = 173 + 2 = 175$
+
+Next, determine the standard error of the difference between the two sample averages. 
+
+$SE(\bar{X}-\bar{Y}) = \frac{\bar{x}-\bar{y}-0}{t\text{-statistic}}$
+
+$SE(\bar{X}-\bar{Y}) = \frac{9.807120 - 9.488356 - 0}{1.7032}=0.297022$
+
+Next, determine what the $p$-value would be based on an upper tailed alternative hypothesis: a greater than one-sided hypothesis. 
+
+If $\mu_{x} > \mu_{y}$, then the $p$-value would be $\frac{0.2847}{2}=0.14235$ since $\bar{x}-\bar{y} > 0$.
+
+Lastly, determine what the $p$-value would be based on a lower tailed alternative hypothesis: a less than one-sided hypothesis.
+
+If $H_{a}: \mu_{x} < \mu_{y}$, then the $p$-value would be $1 - \frac{0.2847}{2} = 1 - 0.14235 = 0.85765$, since $\bar{x}-\bar{y} > 0$.
+
+***Statistical Report***
+
+```{r}
+fatal <- ex0223
+set.seed(972839)
+observed.difference <- mean(fatal$PctChange[fatal$SpeedLimit=="Inc"]) - mean(fatal$PctChange[fatal$SpeedLimit=="Ret"])
+rs.mean <- c()
+for(i in 1:5000){
+  fatal$resampled.changed <- sample(fatal$PctChange)
+  rs.mean[i] <- mean(fatal$resampled.change[fatal$SpeedLimit=="Inc"]) - mean(fatal$resampled.change[fatal$SpeedLimit=="Ret"])
+}
+sum(rs.mean >= observed.difference)/5000
+
+t.test(fatal$PctChange[fatal$SpeedLimit=="Inc"], 
+       fatal$PctChange[fatal$SpeedLimit=="Ret"], 
+       alternative = "greater", mu = 0, confidence = 0.95, var.equal = TRUE)
+```
+
+We are utilizing a permutation test because the status of speed limit chang was not randomly assigned to states. The hypothesis states that there is evidence for greater change in traffic fatalities for states that changed their speed limits after abolishing the federal speed limit of 55 miles per hour than for states that did not do so.
+
+$H_{0}: \mu_{\text{Inc}}=\mu_{\text{Ret}}$
+
+$H_{0}: \mu_{\text{Inc}}>\mu_{\text{Ret}}$
+
+The methods utilized for this statistical report are the two-sample *t*-test or the permutation. A one-sided test is utilized to interpret the statistical results and reach the conclusion. The data was not randomly selected and it was not randomly assigned to any treatment groups.
+
+***True Or False***
+
+For each statement below, state whether it is true or false. If the statement is false, briefly explain why it is false.
+
+A statistical computer package will only print out a *p*-value or confidence interval if the conditions for its validity are met.
+
+This first statement is false because statistical computer programs do supply confidence intervals and *p*-values regardless of whether conditions for validity are met. Given that, it is the responsibility of the data analyst to determine whether conditions for validity are met. They cannot always rely solely on the given statistical computer program.
+
+A sample histogram will have a normal distribution if the sample size is large enough.
+
+This statement is false because an average from a sample will have a sampling distribution that will tend toward normal with large sample sizes, but the sample histogram should mirror the population distribution. As the sample size becomes larger, the sample histogram should become a better approximation to the population histogram.
+
+***Exercise 3.20***
+
+```{r}
+in_state <- c(1000, 4000, 5000, 8000, 40000)
+mean(in_state)
+log.in <- log(in_state)
+mean(log.in)
+log(mean(in_state))
+median(in_state)
+median(log.in)
+log(median(in_state))
+ratios <- c(3,2,6,4,1)
+median(ratios)
+log.out <- c(8.0064, 8.9872, 10.3090, 10.3735, 10.5966)
+median(log.out-log.in)
+log(median(ratios))
+```
+
+***Statistical Report: Part A***
+
+$H_{0}: \mu_{\text{difference}}=0$
+
+$H_{a}: \mu_{\text{difference}}>0$
+
+The difference in this context refers to the difference between out-of-state public university tuition and in-state public university tuition.
+
+```{r}
+tuition <- ex0332
+difference <- tuition$OutOfState[tuition$Type=="Public"]-tuition$InState[tuition$Type=="Public"]
+par(mfrow=c(1,2))
+boxplot(difference, ylab="Difference ($U.S.)", main="Public Tuition Difference")
+hist(difference, xlab="Difference ($U.S.)",  main="Public Tuition Difference")
+summary(difference)
+sd(difference)
+```
+
+The data are paired because the in-state tuition for a given public university will be related to its out-of-state tuition. For example, public universities that tend to have higher rates of tuition will have higher rates overall for both in-state tuition and out-of-state tuition.
+
+The assumptions for a paired *t*-test include independent observations a and normal population of differences. For these data, it seems reasonable to assume that the difference in tuition rates for one public institution do not affect the difference for another public institution as long as the institutions are not connected through some state-wide university system. The data appear to be slightly symmetric and bell-shaped, but have two outlying observations that indicate two public institutions in the data that have virtually no difference between their out-of-state and in-state tuition rates. Assuming these are valid values (and not data entry errors), we could investigate the influence of these outlying observations by conducting our analysis both with and without the outliers in order to determine whether the results change.
+
+```{r}
+# Paired t-test with all observations
+t.test(difference, mu=0, alternative="greater", confidence=0.95)
+# Run paired t-test without outliers with the difference equal to 0
+difference.no.out1 <- difference[difference>0]
+t.test(difference.no.out1, mu=0, alternative="greater", confidence=0.95)
+# Run paired t-test without two outliers with small differences
+difference.no.out2 <- difference[difference>1497]
+t.test(difference.no.out2, mu=0, alternative="greater", confidence=0.95)
+# Obtain two-sided interval
+t.test(difference, mu=0, alternative="two.sided", confidence=0.95)
+```
+
+Based on these results, the analyses give the same answer to the question of interest when we include and exclude the two outlying observations. We will report our results based on the entire data set.
+
+There is convincing evidence to suggest that, on average, public institutions have larger out-of-state tuition than in-state tuition (the one-sided *p*-value is less than 0.0001 for a paired *t*-test). On average, out-of-state tuition is estimated to be $\$9038.40$ more than in-state tuition for public universities. The 95 percent confidence interval is ($\$7687.08$, $\$1039.72$).
+
+Because public institutions were randomly sampled, these results can be inferred about public institutions in the United States during the 2011-2012 academic year. Because this is an observational study, no causal connections can be inferred between in-state tuition rates and out-of-state tuition rates.
+
+***Statistical Report: Part B***
+
+$H_{0}: \mu_{\text{private}}-\mu_{\text{public}}=0$
+
+$H_{a}: \mu_{\text{private}}-\mu_{\text{public}}>0$
+
+```{r}
+private <- dplyr::filter(tuition, Type=="Private")
+log(private$InState)
+Private.In <- tuition$InState[tuition$Type=="Private"]
+Public.In <- tuition$InState[tuition$Type=="Public"]
+
+par(mfrow=c(1,3))
+boxplot(tuition$InState~tuition$Type, ylab="In-State Tuition ($U.S.)", main="In-State Public Tuition")
+hist(Private.In, xlab="In-State Tuition ($U.S.)", main="In-State Private Tuition")
+hist(Public.In, xlab="In-State Tuition ($U.S.)", main="In-State Public Tuition")
+
+tapply(tuition$InState, tuition$Type, summary)
+tapply(tuition$InState, tuition$Type, sd)
+```
+
+The data utilized to answer this research question are independent. It seems reasonable to assume that the in-state tuition rate for a private institution will not affect the in-state tuition rate for a public institution.
+
+The assumptions for a two-sample *t*-test for independent samples include independent observations, independent groups, equal population standard deviations, and normal population distributions for each group. For these data, it seems reasonable to assume that the in-state tuition rates for one public institution do not affect the in-state tuition rate for another public institution. Similarly, it seems reasonable to assume that the in-state tuition rates for one private institution do not affect the in-state tuition rate for another private institution. Furthermore, it seems reasonable to assume that in-state tuition rates for public institutions will not affect in-state tuition rates for private institutions. The data are highly skewed, with the distribution of in-state tuition rates for private institutions having a much larger sample standard deviation and mean than the distribution of in-state tuition rates for public institutions. It appears that there is a multiplicative relationship between the in-state tuition rates for public and private institutions, so we could consider utilizing a logarithmic transformation. Alternatively, we could consider a non-parametric test, such as the rank-sum test.
+
+```{r}
+boxplot(log(tuition$InState)~tuition$Type, ylab="Logarithmic Scale", main="Logarithmically Transformed In-State Tuition Rates")
+# Run two-sample t-test on logarithmically transformed tuition data
+t.test(log(tuition$InState)~tuition$Type, var.equal=TRUE, mu=0, alternative="greater", confidence=0.95)
+# Obtain two-sided interval
+t.test(log(tuition$InState)~tuition$Type, var.equal=TRUE, mu=0, alternative="two.sided", confidence=0.95)
+```
+
+Based on these results, it appears that logarithmically transforming the data results in relatively symmetric distributions that appear to have an additive relationship, so we performed a two-sample *t*-test on the logarithmically transformed in-state tuition data for private and public institutions.
+
+There is convincing evidence to suggest that the average of the logarithmically transformed in-state tuition is larger for private institutions than for public institutions (the one-sided *p*-value is less than 0.0001 for a two-sample *t*-test). The average of the logarithmically transformed in-state tuition is estimated to be, on a logarithmic scale, $\$1.306195$ more than the average of the logarithmically transformed in-state tuition for public institutions. The 95 percent confidence interval is, on a logarithmic scale, ($\$1.065969$, $\$1.546419$).
+
+Because the logarithmically transformed data distributions are relatively symmetric, it seems reasonable to assume that the average of the logarithmically transformed in-state tuition rates is similar to the median of the logarithmically transformed in-state tuition rates for both private and public institutions. Therefore, we can say that it is estimated that the median in-state tuition for private institutions is $e^{1.306195}=3.692099$ times as large as the median in-state tuition for public institutions. Therefore, the 95 percent confidence interval is ($e^{1.065969}=2.903651$,$e^{1.546419}=4.694629$).
+
+Because public and private institutions were randomly sampled, these results can be inferred about public and private institutions in the United States during the 2011-2012 academic year. This is an observational study, where the university classification (private institution versus public institution) cannot be randomly assigned to institutions, so no causal connections can be inferred between in-state tuition rates and private versus public classification.
+
+***Exercise 5.17***
+
+```{r}
+1-pf(3.5, 7, 24)
+
+aov_table <- data.frame(Source = c("Betwen groups", "Within groups", "Total"),
+                        df = c(7, 24, 31),
+                        SumSquares = c(35819, 35088, 70907),
+                        MeanSquares = c(5117, 1462, NA),
+                        Fstat = c(3.5, NA, NA),
+                        pval = c(0.009942, NA, NA))
+library(knitr)
+options(knitr.kable.NA = "")
+kable(aov_table, col.names = c("Source", "df", "Sum of Squares", "Mean Squares", "F-statistic", "p-value"))
+```
+
+There are eight groups and the *p*-value for the difference between the group means is 0.009942, which is less than the significance level of $\alpha=0.05$. In other words, there is a less than five percent probability that there is no difference between the group means, meaning that there is evidence that the group means are different.
+
+***Exercise 5.18***
+
+```{r}
+acid <- ex0518
+tapply(acid$Protein, acid$Treatment, mean)
+
+fit1 <- aov(Protein~Treatment, data=acid)
+fit2 <- aov(Protein~Day, data=acid)
+plot(fit1, which=1)
+plot(fit2, which=1)
+
+acid$daytrt <- paste(acid$Treatment, acid$Day, sep="")
+tapply(acid$Protein, acid$daytrt, mean)
+
+fit3 <- aov(Protein~daytrt, data=acid)
+summary(fit3)
+anova(fit1, fit3)
+```
+
+There is strong evidence that one of the group means at minimum is not equal to the other group means. There is also strong evidence that there are differences among the control groups by day, in addition to any difference by treatment.
+
+***Exercise 5.23***
+
+```{r}
+oxy <- ex0523
+summary(aov(Oxygen~Bone, data=oxy))
+```
+
+There is very strong evidence of differences in average oxygen isotopic concentration between the different bones in the *Tyrannosaurus Rex* skeleton.
+
+***Exercise 5.25***
+
+```{r}
+income <- ex0525
+summary(aov(log(Income2005)~Educ, data=income))
+```
+
+The ANOVA test suggest extremely strong evidence fo differences in average income or median income by education level.
+
+```{r}
+lincomb.fun <- function(coef.vec, data, gamma=0, conf.level=0.95){
+  val <- data[,1]
+  lbls <- data[,2]
+  n.i <- table(lbls)
+  n <- sum(n.i)
+  df <- n-length(n.i)
+  ybar <- tapply(val, lbls, mean)
+  sdev <- tapply(val, lbls, sd)
+  s.p <- sqrt(sum(((n.i-1)*(sdev^2))/df))
+  g <- sum(coef.vec*ybar)
+  SE.g <- s.p*sqrt(sum((coef.vec^2)/n.i))
+  t.stat <- (g-gamma)/SE.g
+  if (t.stat<0){pval <- 2*pt(t.stat, df)}
+  else {pval <- 2*pt(t.stat, df, lower.tail=FALSE)}
+  alpha <- 1-conf.level
+  CI <- g + c(-1,1)*qt((1-alpha)/2, df)*SE.g
+  return(unlist(list(g=g, SE.g=SE.g, Pvalue=pval, CI=CI)))
+}
+table(income$Educ)
+lincomb.fun(c(0,0,-1,0,1), cbind(log(income$Income2005), income$Educ))
+lincomb.fun(c(0,-1,1,0,0), cbind(log(income$Income2005), income$Educ))
+lincomb.fun(c(-1,1,0,0,0), cbind(log(income$Income2005), income$Educ))
+lincomb.fun(c(1,0,0,-1,0), cbind(log(income$Income2005), income$Educ))
+```
+
+There is strong evidence of difference between pairs, except for 16 years of education and more than 16 years of education. We estimate a 33 percent increase in median income from less than 12 years of education to 12 years of education, a 16 percent increase from 12 years of education to 13-15 years of education, a 46 percent increase from 13-15 years of education to 16 years, and a 10 percent increase from 16 years of education to more than 16 years of education (despite the evidence being weak).
+
+***Exercise 6.23***
+
+$H_{0}: \mu_{\text{low}-\text{fat}}=\mu_{\text{Mediterranean}}=\mu_{\text{low}-\text{carbohydrate}}$. For the alternative hypothesis ($H_{a}$), there is one inequality at minimum.
+
+```{r}
+diet <- ex0623
+names(diet)
+boxplot(WtLoss24~Group, data=diet)
+diet %>% ggplot(aes(x=Group, y=WtLoss24)) + geom_violin() + labs(x="Diet", 
+                                                                 y="Weight Reduction (Kilograms)",
+                                                                 title = "Weight Reduction by Diet")
+diet %>%
+  group_by(Group) %>%
+  summarise(n=length(WtLoss24), min=min(WtLoss24), mean=mean(WtLoss24), 
+            median=median(WtLoss24), max=max(WtLoss24), sd=sd(WtLoss24), .groups='drop')
+```
+
+We will utilize a one-way ANOVA test because there are three types of diets, and we desire to determine whether there is a difference in the true mean weight reduction that occurs for each over a two-week span.
+
+The assumptions for the one-way ANOVA test include independent groups and observations, constant variance, and normality.
+
+```{r}
+fit <- aov(WtLoss24~Group, data=diet)
+par(mfrow=c(2,2))
+plot(fit)
+
+par(mfrow=c(1,1))
+hist(residuals(fit))
+summary(fit)
+```
+
+There is moderate evidence to suggest that one of the mean amount of weight reduction due to a diet at the very minimum is different than the other means. According to the one-way ANOVA test, the *F*-value is equal to 3.236 and the *p*-value is equal to 0.0409.
+
+```{r}
+TKfit <- TukeyHSD(fit)
+TKfit
+plot(TKfit)
+```
+
+All pairwise comparisons among the three diets were formulated by utilizing the HSD test named after John Wilder Tukey in order to maintain a family-wise confidence level of 95 percent. The mean amount of weight reduction in two weeks is estimated to 0.990101 kilograms more for the low-carbohydrate diet than for the low-fat diet. The 95 percent confidence interval was calculated as 0.0639911 kilograms to 1.916292 kilograms. The other comparisons between mean weight reduction for the other pairwise comparisons did not provide strong evidence to suggest a difference among the other diets. The 95 percent confidence interval for the Mediterranean diet to the low-carbohydrate diet was calculated as ($-2.932$, $-1.1623$) and the 95 percent confidence interval for the Mediterranean diet to the low-fat diet was calculated as ($-0.6974$, $3.2932$).
+
+The researchers randomly assigned volunteers to one of three diets, so they can say that the diet caused the weight reductions that were observed. Because employees were not randomly selected, it would seem that these results could only be inferred to employees who tend to consume lunch at that workplace and not to a broader population of employees.
+
+***Exercise 7.21***
+
+```{r}
+dissun <- ex0721
+dissun %>%
+  ggplot(aes(x=Order, y=log(Distance))) + geom_point() + geom_smooth(method="lm", se=FALSE)
+
+plot(dissun$Order, log(dissun$Distance))
+fit2 <- lm(log(Distance)~Order, data=dissun)
+abline(fit2$coef, col="red", lwd=2)
+plot(fit2, which=c(1,2,5))
+summary(fit2)
+
+plot(dissun$Order2, log(dissun$Distance2))
+fit3 <- lm(log(Distance2)~Order2, data=dissun)
+abline(fit3$coef, col="red", lwd=2)
+plot(fit3, which=c(1,2,5))
+summary(fit3)
+```
+
+The fit appears better for the second set of planets. Points lie closer to the line, residual standard error is lower, the magnitude of residuals is smaller, and the distribution is more symmetric.
+
+***Exercise 7.25***
+
+```{r}
+hubble1 <- ex0725
+fit4 <- lm(Distance~Velocity, data=hubble1)
+summary(fit4)
+1.643e-03*979.8
+```
+
+We can say that we estimate the age of the universe to be $1.643\times 10^{-3} \frac{\text{mpsc*sec}}{\text{km}}$, which is approximately 1.61 billion years.
+
+```{r}
+fit5 <- lm(Distance~Velocity-1, data=hubble1)
+summary(fit5)
+1.730e-03*979.8
+```
+
+***Exercise 7.25***
+
+```{r}
+height <- ex0726
+height$parent.ht <- (height$Father+height$Mother*1.08)/2
+height$children.ht=NULL
+
+for (i in 1:933){ifelse(height$Gender[i]=="female", 
+                        height$children.ht[i] <- height$Height[i]*1.08,
+                        height$children.ht[i] <- height$Height[i]*1)}
+
+fit6 <- lm(children.ht~parent.ht, data=height)
+summary(fit6)
+predict(fit6, newdata=data.frame(parent.ht=c(65,76)), interval="prediction", se.fit=TRUE)
+```
+
+***Exercise 8.15***
+
+```{r}
+island <- case0801
+plot(island$Species~island$Area)
+fit7 <- lm(Species~Area, data=island)
+abline(fit7$coef, col="red", lwd=2)
+
+plot(fit7, which=1)
+```
+
+The curvature of the scatter plot and the outliers on the residual versus fitted plot indicate a requirement for transformation.
+
+***Exercise 8.17***
+
+```{r}
+pestcon <- ex0817
+par(mfrow=c(3,1))
+plot(pestcon$Mass~pestcon$Load)
+plot(log(pestcon$Mass)~log(pestcon$Load))
+plot((1/pestcon$Mass)~(1/pestcon$Load))
+par(mfrow=c(2,2))
+plot(log(pestcon$Mass)~pestcon$Load) # 0.7568
+plot(log(pestcon$Mass)~sqrt(pestcon$Load)) # 0.8242
+plot(sqrt(pestcon$Mass)~log(pestcon$Load)) # 0.8166
+plot(sqrt(pestcon$Mass)~sqrt(pestcon$Load)) # 0.9887
+```
+
+The best transformation that will produce an approximate linear relationship is to logarithmically transform mass and take the square root of load.
+
+***Exercise 8.26***
+
+$H_{0}: \beta_{k}=\beta_{0}$, where $\beta_{k}$ is the coefficient for the law of Kleiberand $\beta_{0}$ is the coefficient representing the non-observance of the law of Kleiber, meaning that $\text{MBR}\neq c\times m^{0.75}$.
+
+$H_{a}: \beta_{k}\neq\beta_{0}$
+
+```{r}
+kleiber <- ex0826
+plot(kleiber$Metab~kleiber$Mass)
+fit8 <- lm(kleiber$Metab~kleiber$Mass, data=kleiber)
+plot(log(kleiber$Metab)~log(kleiber$Mass))
+fit9 <- lm(log(kleiber$Metab)~log(kleiber$Mass), data=kleiber)
+plot(fit9)
+summary(fit9)
+```
+
+***Exercise 9.15***
+
+```{r}
+rainfall <- ex0915
+fit1 <- lm(Yield~Rainfall + I(Rainfall^2), data=rainfall)
+summary(fit1)
+fit2 <- lm(Yield~Rainfall+I(Rainfall^2)+Year, data=rainfall)
+summary(fit2)
+fit3 <- lm(Yield~Rainfall+I(Rainfall^2)+Year+Year*Rainfall, data=rainfall)
+summary(fit3)
+
+par(mfrow=c(1,2))
+plot(Yield~Rainfall, data=rainfall)
+plot(fit1$residuals~rainfall$Year)
+```
+
+Predictions tend to be too high in early years and too lower in later years. This suggest that there is something changing over time that is improving crop yield. Agricultural technology and genetic engineering of crops are likely such factors.
+
+The coefficients for *rain* and $rain^2$ are slightly attenuated relative to the model excluding year, but their standard errors are lower. The residual standard error is lower (by about 0.3 or slightly less than 10 percent). The effect of an additional 2.54 centimeters of rain changes from a 2.5-bushel increase in yield (increasing from 17.272 centimeters of rain to 19.812 centimeters of rain) down to a 1.2 bushel decrease in yield (increasing from 39.37 centimeters of rain to 41.91 centimeters of rain).
+
+The interaction term is significantly different from zero. The negative sign of the coefficients indicates that the increase in yield with higher levels of rainfall is reduced in later years, suggesting that the influence of rain is less, perhaps due to irrigation reducing the effect of drier seasons on yield.
+
+***Exercise 9.16***
+
+```{r}
+pollen <- ex0327
+pollen$logit <- log(pollen$PollenRemoved/(1-pollen$PollenRemoved))
+
+plot(PollenRemoved~DurationOfVisit, data=pollen)
+plot(logit~DurationOfVisit, data=pollen)
+plot(logit~log(DurationOfVisit), data=pollen)
+
+fit1 <- lm(logit~log(DurationOfVisit), data=pollen)
+summary(fit1)
+
+fit2 <- lm(logit~BeeType, data=pollen)
+summary(fit2)
+
+fit3 <- lm(logit~BeeType*log(DurationOfVisit), data=pollen)
+summary(fit3)
+
+fit4 <- lm(logit~BeeType+log(DurationOfVisit), data=pollen)
+summary(fit4)
+
+Anova(fit3)
+```
+
+The interaction term in the third model suggests that the relationship between duration and pollen removed does not differ by bee type.
+
+The final model provides relatively strong evidence that, after accounting for the duration of the visit, queens remove less pollen than the worker bees. The significance of the indicator is much stronger here because of correlation between the bee type indicator and the interaction term.
+
+***Exercise 10.17***
+
+```{r}
+galileo <- case1001
+linm <- lm(Distance~Height, data=galileo)
+summary(linm)
+```
+
+The value of $R^2$ was calculated at 0.9264 and the adjusted value of $R^2$ was calculated as 0.9116.
+
+Utilize the data to fit the regression of distance on height and $\text{height}^2$.
+
+```{r}
+quadm <- lm(Distance~Height+I(Height^2), data=galileo)
+summary(quadm)
+```
+
+The value of $R^2$ was calculated at 0.9903 and the adjusted value of $R^2$ was calculated as 0.9855.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, and $\text{height}^3$.
+
+```{r}
+cubm <- lm(Distance~Height+I(Height^2)+I(Height^3), data=galileo)
+summary(cubm)
+```
+
+The value of $R^2$ was calculated at 0.9994 and the adjusted value of $R^2$ was calculated as 0.9987.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, and $\text{height}^4$.
+
+```{r}
+quarm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4), data=galileo)
+summary(quarm)
+```
+
+The value of $R^2$ was calculated at 0.9998 and the adjusted value of $R^2$ was calculated as 0.9995.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, $\text{height}^4$, and $\text{height}^5$.
+
+```{r}
+quinm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5), data=galileo)
+summary(quinm)
+```
+
+The value of $R^2$ was calculated at 1 and the adjusted value of $R^2$ was calculated as 0.9998.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, $\text{height}^4$, $\text{height}^5$, and $\text{height}^6$.
+
+```{r}
+sexm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5)+I(Height^6), data=galileo)
+summary(sexm)
+```
+
+The value of $R^2$ was calculated at 1 and the adjusted value of $R^2$ was not calculated.
+
+For each part, report the code utilized to obtain the fit, the value of $R^2$, and the adjusted value of $R^2$. Also, add a discussion of the trends that you observe and why they do or do not differ for the two measures.
+
+After fitting the regression of distance on height for each of the orders of the functions, it would appear that as the order increases, so too does the value of $R^2$ and the adjusted value of $R^2$. In fact, when the order reaches six, the adjusted value of $R^2$ no longer becomes applicable, while as early as the fifth order reveals that the value of $R^2$ reaches 1. As a result, the trends that underlie the value of $R^2$ and the adjusted value of $R^2$ are roughly the same, except that the upper limitation of the adjusted value of $R^2$ is no longer applicable. Why $R^2$ is no longer applicable as the order reaches six could be attributed to the complexity of a sextic multiple regression model.
+
+***Exercise 10.25***
+
+```{r}
+potato <- read.csv("potato.csv")
+
+fit1 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation, data=potato)
+summary(fit1)
+Anova(fit1)
+
+fit2 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - Site:Irrigation:I(Nitrogen^2), data=potato)
+summary(fit2)
+Anova(fit2)
+
+fit3 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - Site:Irrigation:I(Nitrogen^2) - Site:Irrigation:Nitrogen, data=potato)
+summary(fit3)
+Anova(fit3)
+```
+
+***Introduction***
+
+Human inspectors are often accustomed to inspecting products, as it is often the most economical method. Unfortunately, this can lead to serious inspection error problems. A new company desires to evaluate the performance of its inspectors. 12 novice inspectors evaluated 200 finished products; the same 200 products were also inspected by 12 experienced inspectors.
+
+$H_{0}: \mu_{\text{Novice}}=\mu_{\text{Experienced}}$
+
+$H_{0}: \mu_{\text{Novice}}>\mu_{\text{Experienced}}$
+
+$t=\bar{y}_{\text{Novice}}-\bar{y}_{\text{Experienced}}=12.25$
+
+```{r}
+errors <- c(30,35,26,40,36,20,45,31,33,29,21,48,31,15,25,19,28,17,19,18,24,10,20,21)
+experience <- c(rep("Novice", 12), rep("Experienced", 12))
+subject <- 1:24
+data <- data.frame(errors, experience, subject)
+difference <- mean(errors[experience=="Novice"])-mean(errors[experience=="Experienced"])
+difference
+```
+
+The sampling distribution of $\bar{y}_{\text{Novice}}-\bar{y}_{\text{Experienced}}$ is a permutation distribution because random assignment was not utilized, nor is it possible to randomly assign inspectors to experience level.
+
+```{r}
+output1 <- numeric(100000)
+for (i in 1:100000){
+  Novice <- sample(subject, size=12, replace=FALSE)
+  output1[i] <- mean(errors[Novice])-mean(errors[-Novice])
+}
+hist(output1, col=gray(0.9), prob=TRUE, nclass=50, main="Sampling Distribution of Difference in Means")
+abline(v=difference, col="red")
+length(output1[output1>=difference])/length(output1)
+```
+
+The red line denotes the observed test statistic and the area to the right is the area associated with the *p*-value. The *p*-value is approximated by counting the proportion of observations at or more extreme than the one observed out of the total number of observations or simulations.
+
+$H_{0}: \sigma^{2}_{\text{Novice}}=\sigma^{2}_{\text{Experienced}}$
+
+$H_{a}: \sigma^{2}_{\text{Novice}}>\sigma^{2}_{\text{Experienced}}$
+
+$H_{0}: \frac{\sigma^{2}_{\text{Novice}}}{\sigma^{2}_{\text{Experienced}}}=1$
+
+$H_{0}: \frac{\sigma^{2}_{\text{Novice}}}{\sigma^{2}_{\text{Experienced}}}>1$
+
+$\text{RMD}=\frac{\frac{\Sigma^{m}_{i=1}\vert dev_{i1} \vert}{m}}{\frac{\Sigma^{n}_{i=1}\vert dev_{j2} \vert}{n}}$, where $dev_{i1}=Y_{1i}-\text{Median}(Y_{1})$, $dev_{j2}=Y_{2j}-\text{Median}(Y_{2})$, and $m$ and $n$ are the sample sizes.
+
+```{r}
+rmd1 <- mean(abs(errors[experience=="Novice"]-median(errors[experience=="Novice"])))
+rmd2 <- mean(abs(errors[experience=="Experienced"]-median(errors[experience=="Experienced"])))
+rmd <- rmd1/rmd2
+rmd
+```
+
+If the variances are approximately equal, then the ratio of the two variances would be close to one.
+
+```{r}
+output2 <- numeric(10000)
+for (i in 1:10000){
+  new_sample <- sample(subject, size=12, replace=FALSE)
+  O1 <- mean(abs(errors[new_sample]-median(errors[new_sample])))
+  O2 <- mean(abs(errors[-new_sample]-median(errors[-new_sample])))
+  output2[i] <- O1/O2
+}
+hist(output2, nclass=50, col=gray(0.9), main="Sampling Distribution of RMD")
+abline(v=rmd, col="red")
+length(output2[output2>=rmd])/length(output2)
+```
+
+The data is from a n experiment concerning the effects of intrinsic and extrinsic motivation on creativity. Subjects with considerable experience in creative writing were randomly assigned to one of two treatment groups.
+
+```{r}
+attach(creativity)
+hist(Score)
+hist(Score, freq=FALSE)
+hist(Score, main="Creativity Scores", xlab="Score", ylab="Density")
+hist(Score, col="darkblue")
+hist(Score, breaks=10)
+
+hist(Score, freq=FALSE, col="magenta", breaks=15, 
+     xlim=c(0,40), ylim=c(0,0.1), xlab="Creativity Score", ylab="Relative Frequency", 
+     main="Histogram of Creativity Scores for Both Extrinsic and Extrinsic Motivations")
+
+boxplot(Score~Treatment)
+boxplot(Score~Treatment, col=c("blue", "orange"), 
+        ylim=c(0,40), xlab="Treatment Group", ylab="Creativity Score",
+        main="Box Plot of Creativity Scores By Extrinsic Versus Intrinsic Motivation")
+
+par(mfrow=c(1,2))
+stem.leaf(Score, unit=0.1)
+stem.leaf.backback(Score[Treatment=="Extrinsic"], Score[Treatment=="Intrinsic"], unit=0.1)
+
+detach(creativity)
+```
+
+The distribution of many real-world populations are not well-approximated by a normal distribution, yet many statistical methods are based on just such an assumption. We often justify the utilization of such procedures because of the Central Limit Theorem (CLT).
+
+```{r}
+curve(dchisq(x, df=3), from=0, to=20, ylab="Density")
+
+set.seed(12345)
+SamplingDistribution <- function(n, reps){
+  ybar <- numeric(reps)
+  for (i in 1:reps){
+    sample <- rchisq(n=n, df=3)
+    ybar[i] <- mean(sample)
+  }
+  return(ybar)
+}
+ybar <- SamplingDistribution(n=5, reps=5000)
+hist(ybar)
+```
+
+The normal distribution is not a terrible approximation, but the right tail is definitely longer than the left tail, so it is somewhat right-skewed.
+
+```{r}
+set.seed(12345)
+ConfidenceIntervals <- function(n, reps){
+  CI <- matrix(0, nrow=reps, ncol=2)
+  for (i in 1:reps){
+    sample <- rchisq(n=n, df=3)
+    CI[i,] <- t.test(sample)$conf.int[1:2]
+  }
+  return(CI)
+}
+
+CI <- ConfidenceIntervals(n=5, reps=5000)
+reps <- 5000
+CILevel <- sum(CI[,1]<=3 & CI[,2]>=3)/reps
+CILevel
+```
+
+Approximately 95 percent of the confidence intervals should contain the true value of the parameter, so there should be about $0.95\times5000=4750$ intervals that contain the true mean of 3.
+
+```{r}
+set.seed(12345)
+ybar <- SamplingDistribution(n=30, reps=5000)
+CI <- ConfidenceIntervals(n=30, reps=5000)
+CILevel <- sum(CI[,1]<=3 & CI[,2]>=3)/reps
+hist(ybar)
+CILevel
+
+ybar <- SamplingDistribution(n=60, reps=5000)
+CI <- ConfidenceIntervals(n=60, reps=5000)
+CILevel <- sum(CI[,1]<=3 & CI[,2]>=3)/reps
+hist(ybar)
+CILevel
+```
+
+Larger sample sizes render the Central Limit Theorem and normal assumptions more appropriate, which in turn means that the actual confidence interval coverage level is closer to the nominal level.
+
+The shape of a glass affects the amount of liquid that individuals pour into a glass. To test this theory, support you recruit 60 volunteers and randomly assign them (in equal numbers) to pour a shot into either a tall and slender highball glass or a short and wide tumbler glass, each of which holds 355 milliliters. We are interested in whether there is any evidence that the shape of the glass affects the amount poured. This is an experiment because we are assigning subjects the type of glass to pour into and also assignin the task.
+
+$H_{0}: \mu_{\text{Highball}}=\mu_{\text{Tumbler}}$
+
+$H_{a}: \mu_{\text{Highball}}\neq\mu_{\text{Tumbler}}$
+
+```{r}
+pour <- c(39.4, 40.3, 25.8, 59.3, 41.4, 87.7, 48.5, 22.5,
+          45.8, 47.1, 45.1, 59.8, 11.5, 61.1, 33.2, 61.9,
+          27.3, 42.9, 56.0, 53.6, 45.0, 53.7, 32.4, 17.8,
+          66.7, 29.4, 66.5, 52.4, 24.6, 50.5, 61.9, 80.7,
+          69.5, 67.0, 55.5, 46.6, 56.4, 50.2, 44.6, 56.6,
+          53.2, 66.2, 80.9, 59.8, 82.1, 39.8, 43.9, 69.0,
+          67.2, 40.3, 97.6, 52.4, 41.4, 70.0, 18.8, 73.0,
+          26.1, 56.0, 55.8, 42.1)
+glass <- c(rep("highball", 30), rep("tumbler", 30))
+boxplot(pour~glass, main="Pour Amount by Glass Type")
+
+# Two-sided t-test
+t.test(pour~glass, var.equal=TRUE)
+df <- length(pour)-2
+qt(p=(1-0.95)/2, df=df)
+qt(p=(1-0.95)/2, df=df, lower.tail=FALSE)
+# Calculate the difference in means
+t.test(pour~glass, var.equal=TRUE)$estimate[[1]]-t.test(pour~glass, var.equal=TRUE)$estimat[[2]]
+t.test(pour~glass, var.equal=TRUE, conf.level=0.90)
+# One-sided t-test
+t.test(pour~glass, var.equal=TRUE, alternative="greater")
+```
+
+Violating the independence of observations assumption across groups has the opposite effect of violating independence of observations within groups because we are underestimating the strength of evidence by ignoring the pairing.
+
+```{r}
+group1 <- c(48.9,50.6,51.0,48.0,54.2,50.7,45.9,48.8,47.8,51.1)
+group2 <- c(48.88,52.63,52.55,50.94,53.02,50.66,47.78,48.44,48.92,51.63)
+
+mean(group1)
+var(group1)
+mean(group2)
+var(group2)
+
+# Independent two-sample t-test
+t.test(group1, group2, var.equal=TRUE)
+
+differences <- group1-group2
+mean(differences)
+var(differences)
+
+# Paired one-sample t-test
+t.test(differences, var.equal=TRUE)
+```
+
+A common rule is that if $n\geq30$, then we can assume the CLT is applicable such that the sampling distribution of the sample mean is approximately normal. This general rule is not reasonable to utilize in practice. As revealed with the skewed distribution and the distribution characterized by kurtosis, the sampling distribution is still not normal even with $n=100$. This implies that for these distributions, sample sizes of more than 30 are required, otherwise the *t*-tools will produce misleading results.
+
+```{r}
+par(mfrow=c(1,3))
+curve(dexp(x), xlim=c(0,10), main="Exponential Distribution")
+curve(dt(x, df=3), xlim=c(-6,6), main="t-Distribution")
+curve(dunif(x), xlim=c(0,1), main="Uniform Distribution")
+
+par(mfrow=c(1,3))
+ybar1 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar1[i] <- mean(rexp(n=30))
+}
+hist(ybar1, main="Exponential Sampling Distribution")
+
+ybar2 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar2[i] <- mean(rt(n=30, df=3))
+}
+hist(ybar2, main="Sampling t-Distribution")
+
+ybar3 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar3[i] <- mean(runif(n=30))
+}
+hist(ybar3, main="Uniform Sampling Distribution")
+
+par(mfrow=c(1,3))
+ybar1 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar1[i] <- mean(rexp(n=50))
+}
+hist(ybar1, main="Exponential Sampling Distribution")
+
+ybar2 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar2[i] <- mean(rt(n=50, df=3))
+}
+hist(ybar2, main="Sampling t-Distribution")
+
+ybar3 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar3[i] <- mean(runif(n=50))
+}
+hist(ybar3, main="Uniform Sampling Distribution")
+
+par(mfrow=c(1,3))
+ybar1 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar1[i] <- mean(rexp(n=100))
+}
+hist(ybar1, main="Exponential Sampling Distribution")
+
+ybar2 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar2[i] <- mean(rt(n=100, df=3))
+}
+hist(ybar2, main="Sampling t-Distribution")
+
+ybar3 <- rep(NA, 1000)
+for (i in 1:1000){
+  ybar3[i] <- mean(runif(n=100))
+}
+hist(ybar3, main="Uniform Sampling Distribution")
+```
+
+The more symmetric the population distribution, the smaller the sample size required for $\bar{y}$ to be approximately normally distributed.
+
+The greater the skew of the population distribution, the larger the sample size required for $\bar{y}$ to be approximately normally distributed.
+
+The less normal the population distribution is, the larger the sample size required for $\bar{y}$ to be approximately normally distributed.
+
+```{r}
+time <- c(47.20001,21.99998,20.39999,19.70001,17.4,14.7,13.39999,13,12.3,12.20001,
+          10.3,9.7,9.7,9.5,9.1,8.9,8.9,8.4,8.09999,7.9,7.8,6.9,6.3,6.1,5.6,4.7,4.7,4.3,
+          4.2,3.9,3.4,3.1,3.1,2.7,2.4,2.3,2.3,2.1,2.1,2,1.9,1.7,1.7,19.70001,
+          16.19998,15.9,15.40002,9.7,8.9,8.6,8.6,7.4,6.3,6.1,6,6,5.9,4.9,4.6,3.8,3.6,
+          3.5,3.3,3.3,2.9,2.8,2.7,2.4,2.3,2,1.8,1.7,1.7,1.6,1.4,1.2,1.1,1)
+group <- c(rep("NV", 43), rep("VV", 35))
+```
+
+According to the independence assumption, the participants (observations) are independent of one another.
+
+According to the constant variance assumption, the population (group) standard deviation of time is equal for the NV group and the VV group.
+
+According to the normality assumption, the population (group) distributions of the time for the NV group and the VV Group are normal.
+
+```{r}
+boxplot(time~group)
+var(time[1:43])/var(time[44:78])
+par(mfrow=c(1,2))
+qqPlot(time[group=="NV"])
+qqPlot(time[group=="VV"])
+
+tapply(time, group, summary)
+tapply(time, group, sd)
+
+logtime <- log(time)
+boxplot(logtime~group)
+var(logtime[1:43])/var(logtime[44:78])
+par(mfrow=c(1,2))
+qqPlot(logtime[group=="NV"])
+qqPlot(logtime[group=="VV"])
+
+tapply(logtime, group, summary)
+tapply(logtime, group, sd)
+
+t_test <- t.test(logtime~group, var.equal=TRUE)
+t_test
+exp(t_test$estimate[[1]]-t_test$estimate[[2]])
+exp(t_test$conf.int)[1:2]
+attributes(exp(t_test$conf.int))[[1]]
+```
+
+When either the constant variance assumption or the normality assumption (or both) are not reasonably satisfied, there are several solution. One potential option is to transform the data. Often we utilize logarithmic transformation.
+
+```{r}
+bearings <- read.csv("fatigue.csv", header=TRUE)
+bearings$compound <- factor(bearings$compound)
+means <- tapply(bearings$time, INDEX=bearings$compound, FUN=mean)
+sds <- tapply(bearings$time, INDEX=bearings$compound, FUN=sd)
+kable(cbind(levels(bearings$compound), round(means, digits=2), round(sds, digits=2)),
+      col.names=c("Compound", "Mean (Millions of Cycles)", "Standard Deviation (Million of Cycles)"),
+      row.names=FALSE)
+
+model1 <- lm(time~compound, data=bearings)
+summary(aov(model1))
+plot(model1, which=1)
+boxplot(time~compound, data=bearings)
+par(mfrow=c(2,2))
+plot(model1)
+
+model2 <- lm(time~compound-1, data=bearings)
+summary(aov(model2))
+
+model2$coefficients
+confint(model2)
+summary(model2)
+summary(model1)
+```
+
+$H_{0}: \frac{\mu_{\text{I}}+\mu_{\text{V}}}{2}=\frac{\mu_{\text{III}}+\mu_{\text{IV}}}{3}$
+
+$H_{0}:\frac{\mu_{\text{I}}+\mu_{\text{V}}}{2}-\frac{\mu_{\text{III}}+\mu_{\text{IV}}}{3}=0$
+
+$H_{0}: \frac{1}{2}\mu_{\text{I}}+\frac{1}{2}\mu_{\text{V}}+\frac{-1}{3}\mu_{\text{II}}+\frac{-1}{3}\mu_{\text{III}}+\frac{-1}{3}\mu_{\text{IV}}=0$
+
+$H_{0}: \frac{1}{2}\mu_{\text{I}}+\frac{-1}{3}\mu_{\text{II}}+frac{-1}{3}\mu_{\text{III}}+\frac{-1}{3}\mu_{\text{IV}}+\frac{1}{2}\mu_{\text{V}}=0$
+
+The set of coefficients is ($\frac{1}{2}$, $\frac{-1}{3}$, $\frac{-1}{3}$, $\frac{-1}{3}$, $\frac{1}{2}$).
+
+```{r}
+LinearCombination <- function(coef.vec, data, gamma=0, conf.level=0.95){
+  values <- data[,1]
+  group <- data[,2]
+  group_n <- table(group)
+  n <- sum(group_n)
+  df <- n-length(group_n)
+  ybar <- tapply(values, group, mean)
+  s <- tapply(values, group, sd)
+  spooled <- sqrt(sum(((group_n-1)*(s^2))/df))
+  g <- sum(coef.vec*ybar)
+  SEg <- spooled*sqrt(sum((coef.vec^2)/group_n))
+  tstat <- g/SEg
+  if (tstat < 0){pvalue <- 2*pt(tstat, df)}
+  else {pvalue <- 2*pt(tstat, df, lower.tail=FALSE)}
+  alpha <- 1-conf.level
+  CI <- g + c(-1,1)*qt((1-alpha/2), df)*SEg
+  return(unlist(list(g=g, SEg=SEg, pvalue=pvalue, CI=CI)))
+}
+coefs = c(1/2, -1/3, -1/3, -1/3, 1/2)
+LinearCombination(coef.vec=coefs, data=bearings)
+
+TukeyHSD(aov(time~compound, data=bearings))
+plot(TukeyHSD(aov(time~compound, data=bearings)))
+```
+
+Selective reporting of significant results can skew the interpretation of the overall situation. The investigator should either report all pairwise comparisons or clarify in the report that the remaining comparisons exhibited no evidence for a difference.
+
+***Exercise 9.15: First Attempt***
+
+```{r}
+rainfall <- ex0915
+fit1 <- lm(Yield~Rainfall + I(Rainfall^2), data=rainfall)
+summary(fit1)
+fit2 <- lm(Yield~Rainfall+I(Rainfall^2)+Year, data=rainfall)
+summary(fit2)
+fit3 <- lm(Yield~Rainfall+I(Rainfall^2)+Year+Year*Rainfall, data=rainfall)
+summary(fit3)
+
+par(mfrow=c(1,2))
+plot(Yield~Rainfall, data=rainfall)
+plot(fit1$residuals~rainfall$Year)
+```
+
+Predictions tend to be too high in early years and too lower in later years. This suggest that there is something changing over time that is improving crop yield. Agricultural technology and genetic engineering of crops are likely such factors.
+
+The coefficients for *rain* and $rain^2$ are slightly attenuated relative to the model excluding year, but their standard errors are lower. The residual standard error is lower (by about 0.3 or slightly less than 10 percent). The effect of an additional 2.54 centimeters of rain changes from a 2.5-bushel increase in yield (increasing from 17.272 centimeters of rain to 19.812 centimeters of rain) down to a 1.2 bushel decrease in yield (increasing from 39.37 centimeters of rain to 41.91 centimeters of rain).
+
+The interaction term is significantly different from zero. The negative sign of the coefficients indicates that the increase in yield with higher levels of rainfall is reduced in later years, suggesting that the influence of rain is less, perhaps due to irrigation reducing the effect of drier seasons on yield.
+
+***Exercise 9.15: Second Attempt***
+
+```{r}
+rainfall <- ex0915
+plot(Yield~Rainfall, data=rainfall)
+
+fit1 <- lm(Yield~Rainfall+I(Rainfall^2), data=rainfall)
+summary(fit1)
+
+plot(fit1$residuals~rainfall$Year, xlab="Year", ylab="Residuals")
+```
+
+Predictions tend to be too high in early years and too low in later years. This suggests that there is something changing over time that is improving crop yield. Probable factors include improvements in agricultural technology and the genetic engineering of crops.
+
+```{r}
+fit2 <- lm(Yield~Rainfall+I(Rainfall^2)+Year, data=rainfall)
+summary(fit2)
+```
+
+The coefficients for *rain* and $rain^2$ are slightly attenuated relative to the model excluding year, but their standard errors are lower. The residual standard error is lower by 0.286. The effect of an additional 2.54 centimeters of rainfall changes from a increase in yield measured at 2.52408 bushels (increasing from 17.272 (6.8) centimeters of rain to 19.812 (7.8) centimeters of rain) down to a decrease in yield measured at 1.22562 bushels (increasing from 39.37 (15.5) centimeters of rain to 41.91 (16.5) centimeters of rain).
+
+Next, we are going to interpret the slope for rainfall and for year. First, the regression formula for slope for the model is $\beta_{0}+\beta_{1}(\text{Rainfall})+\beta_{2}(\text{Rainfall}^2)+\beta_{3}(Year)$.
+
+```{r}
+5.45488-(2*0.21550*6.8)
+5.45488-(2*0.21550*15.5)
+```
+
+$\hat{y}_{1}=-263.30324+5.67038(R_{1})-0.21550(R^{2}_{1})+0.13634(\text{Year})$
+
+$\hat{y}_{2}=-263.30324+5.67038(R_{1}+1)-0.21550(R_{1}+1)^{2}+0.13634(\text{Year})$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.67038(R_{1}+1)-5.67038(R_{1})-0.21550(R_{1}+1)^{2}-0.21550(R^{2}_{1})$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.67038(R_{1})+5.67038-5.67038(R_{1})$
+
+$\hat{y}_{2}-\hat{y}_{1}=-0.21550(R^{2}_{1})-0.21550-2(0.21550(R_{1}))-0.21550(R^{2}_{1})$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.67038-0.21550-2(0.21550(R_{1}))$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.45488-2(0.21550(R_{1}))$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.45488-2(0.21550(6.8))=2.52408$
+
+$\hat{y}_{2}-\hat{y}_{1}=5.45488-2(0.21550(15.5))=-1.22562$
+
+```{r}
+pairs.panels(rainfall, ellipse=FALSE) # Interpretation Required
+```
+
+Next, we are going to identify an initial model, which might require checking certain assumptions.
+
+```{r}
+fit3 <- lm(Yield~Rainfall+Year, data=rainfall)
+par(mfrow=c(2,2))
+plot(fit3)
+```
+
+The interaction term is significantly different from zero. The negative sign of the coefficient indicates that the increase in yield with higher levels of rainfall is reduced in later years, suggesting that the influence of rain is less, perhaps due to irrigation reducing the effect of drier seasons on yield.
+
+```{r}
+fit4 <- lm(Yield~Rainfall+I(Rainfall^2)+Year+Year*Rainfall, data=rainfall)
+summary(fit4)
+```
+
+Next, we are going to explore residual plots and partial residual plots.
+
+```{r}
+fit3 <- lm(Yield~Rainfall+Year, data=rainfall)
+par(mfrow=c(2,2))
+
+plot(fit3$residuals~Year, ylab="Year Residuals", data=rainfall)
+lines(loess.smooth(y=fit3$residuals, x=rainfall$Year), col="red", lwd=2)
+plot(fit3$residuals~Rainfall, ylab="Rainfall Residuals", data=rainfall)
+lines(loess.smooth(y=fit3$residuals, x=rainfall$Rainfall), col="red", lwd=2)
+
+resMod <- fit3$residuals + rainfall$Year*fit3$coef[3]
+plot(resMod~Year, data=rainfall)
+lines(loess.smooth(y=resMod, x=rainfall$Year), col="red", lwd=2)
+resMod <- fit3$residuals + rainfall$Rainfall*fit3$coef[2]
+plot(resMod~Rainfall, data=rainfall)
+lines(loess.smooth(y=resMod, x=rainfall$Rainfall), col="red", lwd=2)
+```
+
+Next, we are going to add a quadratic item.
+
+```{r}
+rainfall$Rainfall2 <- rainfall$Rainfall^2
+fit5 <- lm(Yield~Rainfall+Rainfall2+Year, data=rainfall)
+par(mfrow=c(2,2))
+plot(fit5)
+
+par(mfrow=c(3,1))
+plot(fit5$residuals~Year, ylab="Year Residuals", data=rainfall)
+lines(loess.smooth(y=fit5$residuals, x=rainfall$Year), col="red", lwd=2)
+plot(fit5$residuals~Rainfall, ylab="Rainfall Residuals", data=rainfall)
+lines(loess.smooth(y=fit5$residuals, x=rainfall$Rainfall), col="red", lwd=2)
+plot(fit5$residuals~Rainfall2, ylab="Squared Rainfall Residuals", data=rainfall)
+lines(loess.smooth(y=fit5$residuals, x=rainfall$Rainfall2), col="red", lwd=2)
+
+par(mfrow=c(3,1))
+resMod <- fit5$residuals + rainfall$Year*fit5$coef[4]
+plot(resMod~Year, data=rainfall)
+lines(loess.smooth(y=resMod, x=rainfall$Year), col="red", lwd=2)
+resMod <- fit5$residuals + rainfall$Rainfall*fit3$coef[2]
+plot(resMod~Rainfall, data=rainfall)
+lines(loess.smooth(y=resMod, x=rainfall$Rainfall), col="red", lwd=2)
+resMod <- fit5$residuals + rainfall$Rainfall2*fit5$coef[3]
+plot(resMod~Rainfall2, data=rainfall)
+lines(loess.smooth(y=resMod, x=rainfall$Rainfall2), col="red", lwd=2)
+
+# Model Effect
+plot(allEffects(fit5), multiline=TRUE)
+```
+
+Next, we are going to add the interaction term.
+
+```{r}
+rainfall$Rainfall2 <- rainfall$Rainfall^2
+fit5 <- lm(Yield~Rainfall+Rainfall2+Year, data=rainfall)
+Anova(fit5)
+summary(fit5)
+
+ggplot(rainfall, aes(x=Rainfall, y=Yield, color=Year)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+fit6 <- lm(Yield~Rainfall+Rainfall2+Year+Year*Rainfall, data=rainfall)
+
+Anova(fit6)
+summary(fit6)
+plot(allEffects(fit6), multiline=TRUE)
+```
+
+***Exercise 9.16: First Attempt***
+
+```{r}
+pollen <- ex0327
+pollen$logit <- log(pollen$PollenRemoved/(1-pollen$PollenRemoved))
+
+plot(PollenRemoved~DurationOfVisit, data=pollen)
+plot(logit~DurationOfVisit, data=pollen)
+plot(logit~log(DurationOfVisit), data=pollen)
+
+fit1 <- lm(logit~log(DurationOfVisit), data=pollen)
+summary(fit1)
+
+fit2 <- lm(logit~BeeType, data=pollen)
+summary(fit2)
+
+fit3 <- lm(logit~BeeType*log(DurationOfVisit), data=pollen)
+summary(fit3)
+
+fit4 <- lm(logit~BeeType+log(DurationOfVisit), data=pollen)
+summary(fit4)
+
+Anova(fit3)
+```
+
+The interaction term in the third model suggests that the relationship between duration and pollen removed does not differ by bee type.
+
+The final model provides relatively strong evidence that, after accounting for the duration of the visit, queens remove less pollen than the worker bees. The significance of the indicator is much stronger here because of correlation between the bee type indicator and the interaction term.
+
+***Exercise 9.16: Second Attempt***
+
+Here, we are going to add the interaction term.
+
+```{r}
+pollen <- ex0327
+pollen$logit <- log(pollen$PollenRemoved/(1-pollen$PollenRemoved))
+ggplot(pollen, aes(x=log(DurationOfVisit), y=logit, color=BeeType)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+ggplot(pollen, aes(x=DurationOfVisit, y=logit, color=BeeType)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+
+fit7 <- lm(logit~BeeType*log(DurationOfVisit), data=pollen)
+summary(fit7)
+plot(allEffects(fit), multiline=TRUE)
+```
+
+***Exercise 10.17: First Attempt***
+
+```{r}
+galileo <- case1001
+linm <- lm(Distance~Height, data=galileo)
+summary(linm)
+```
+
+The value of $R^2$ was calculated at 0.9264 and the adjusted value of $R^2$ was calculated as 0.9116.
+
+Utilize the data to fit the regression of distance on height and $\text{height}^2$.
+
+```{r}
+quadm <- lm(Distance~Height+I(Height^2), data=galileo)
+summary(quadm)
+```
+
+The value of $R^2$ was calculated at 0.9903 and the adjusted value of $R^2$ was calculated as 0.9855.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, and $\text{height}^3$.
+
+```{r}
+cubm <- lm(Distance~Height+I(Height^2)+I(Height^3), data=galileo)
+summary(cubm)
+```
+
+The value of $R^2$ was calculated at 0.9994 and the adjusted value of $R^2$ was calculated as 0.9987.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, and $\text{height}^4$.
+
+```{r}
+quarm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4), data=galileo)
+summary(quarm)
+```
+
+The value of $R^2$ was calculated at 0.9998 and the adjusted value of $R^2$ was calculated as 0.9995.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, $\text{height}^4$, and $\text{height}^5$.
+
+```{r}
+quinm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5), data=galileo)
+summary(quinm)
+```
+
+The value of $R^2$ was calculated at 1 and the adjusted value of $R^2$ was calculated as 0.9998.
+
+Utilize the data to fit the regression of distance on height, $\text{height}^2$, $\text{height}^3$, $\text{height}^4$, $\text{height}^5$, and $\text{height}^6$.
+
+```{r}
+sexm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5)+I(Height^6), data=galileo)
+summary(sexm)
+```
+
+The value of $R^2$ was calculated at 1 and the adjusted value of $R^2$ was not calculated.
+
+For each part, report the code utilized to obtain the fit, the value of $R^2$, and the adjusted value of $R^2$. Also, add a discussion of the trends that you observe and why they do or do not differ for the two measures.
+
+After fitting the regression of distance on height for each of the orders of the functions, it would appear that as the order increases, so too does the value of $R^2$ and the adjusted value of $R^2$. In fact, when the order reaches six, the adjusted value of $R^2$ no longer becomes applicable, while as early as the fifth order reveals that the value of $R^2$ reaches 1. As a result, the trends that underlie the value of $R^2$ and the adjusted value of $R^2$ are roughly the same, except that the upper limitation of the adjusted value of $R^2$ is no longer applicable. Why $R^2$ is no longer applicable as the order reaches six could be attributed to the complexity of a sextic multiple regression model.
+
+***Exercise 10.17: Second Attempt***
+
+```{r}
+galileo <- case1001
+linm <- lm(Distance~Height, data=galileo)
+summary(linm)
+quadm <- lm(Distance~Height+I(Height^2), data=galileo)
+summary(quadm)
+cubm <- lm(Distance~Height+I(Height^2)+I(Height^3), data=galileo)
+summary(cubm)
+quarm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4), data=galileo)
+summary(quarm)
+quinm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5), data=galileo)
+summary(quinm)
+sexm <- lm(Distance~Height+I(Height^2)+I(Height^3)+I(Height^4)+I(Height^5)+I(Height^6), data=galileo)
+summary(sexm)
+residual_table <- data.frame(Source = c("Linear Model", 
+                                        "Quadratic Model", 
+                                        "Cubic Model", 
+                                        "Quartic Model", 
+                                        "Quintic Model", 
+                                        "Sextic Model"),
+                        RSquared = c(0.9264, 0.9903, 0.994, 0.998, 1, 1),
+                        AdjustedRSquared = c(0.911, 0.9855, 0.9987, 0.995, 0.998, "NaN"))
+```
+
+***Exercise 10.25: First Attempt***
+
+```{r}
+potato <- read.csv("potato.csv")
+
+fit1 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation, data=potato)
+summary(fit1)
+Anova(fit1)
+
+fit2 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - Site:Irrigation:I(Nitrogen^2), data=potato)
+summary(fit2)
+Anova(fit2)
+
+fit3 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - Site:Irrigation:I(Nitrogen^2) - Site:Irrigation:Nitrogen, data=potato)
+summary(fit3)
+Anova(fit3)
+```
+
+***Exercise 10.25: Second Attempt***
+
+Here, we will explore model refining for the complex (highest order) model.
+
+```{r}
+potato <- read.csv("potato.csv")
+fit8 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation, data=potato)
+summary(fit8)
+Anova(fit8)
+
+fit9 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - I(Nitrogen^2):Site:Irrigation, data=potato)
+anova(fit8, fit9)
+summary(fit9)
+Anova(fit9)
+
+fit10 <- lm(Yield~Site*Irrigation + Nitrogen*Site*Irrigation + I(Nitrogen^2)*Site*Irrigation - I(Nitrogen^2):Site:Irrigation - Irrigation:I(Nitrogen^2), data=potato)
+anova(fit9, fit10)
+summary(fit10)
+```
+
+A scatter plot is a natural way to visualize the relationship between two quantitative variables, where the observations are plotted as ordered pairs by utilizing some symbol.
+
+```{r}
+evals <- read.csv("evals.csv")
+head(evals)
+```
+
+This data set contains both categorical variables and quantitative variables. Gender should be a categorical variable where students identify as either male or female. In the data, it is encoded as a character string. It should be encoded as a factor with two levels.
+
+```{r}
+str(evals$gender)
+class(evals$gender)
+```
+
+A character string is considered to be a sequence of letters or numbers, or both letters and numbers, that represents text. If two observations contain the same sequence of letters or numbers, or both letters and numbers, they are not automatically recognized as being the same value. A factor is a variable with different groups (levels), where observation values can belong to one of the groups. If two observations have the same value, they are recognized as being in the same group.
+
+```{r}
+evals$gender <- factor(evals$gender)
+str(evals$gender)
+
+colnames(evals)
+colnames(evals)[colnames(evals)=="gender"] <- "sex"
+colnames(evals)
+```
+
+In just identifying a column name to rename, it is easy to accidentally rename the incorrect column, or if columns are removed from the data set, the relative number of the column we are interested in renaming could change. In telling the code to find a variable known as gender to rename, it is easy to misspell the variable of interest (it is case-sensitive). Also, if we run this line of code, and the variable is renamed, but then we change the code and attempt to rerun it, it will still be looking for the variable known as gender, resulting in an error. If a person does not identify as one of the genders provided, they may feel excluded or uncertain of how to respond.
+
+```{r}
+levels(evals$sex)
+levels(evals$sex) <- c("Female", "Male")
+levels(evals$sex)
+```
+
+It is easy to rename the levels in the wrong order, so the levels would be encoded improperly. It is difficult to catch this after it has been done, since renaming overwrites the original labels. This is especially true when the original levels are numbers, such as zero and one, and you have to interpret what label a value classified as zero should be and what label a value classified as one should be.
+
+The pipe operator sends the output of the previous function to the next function. The mutation function creates new variables and changes existing variables. The selection function selects columns from our data set. The filter function filters observations (rows) to keep in our data set. The gather function changes a data set from wide to long format. The count function counts the number of rows. The summary function summarizes data with a function applied to variables (columns).
+
+```{r}
+evals <- read.csv("evals.csv")
+evals_english_older <- evals %>%
+  rename(sex=gender) %>%
+  mutate(sex=factor(sex, labels=c("Female", "Male")),
+         language=factor(language, labels=c("English", "Non-English"))) %>%
+  select(score, sex, language, age) %>%
+  filter(language=="English") %>%
+  filter(age >= 40) %>%
+  mutate(standardized_score=(score-mean(score))/sd(score))
+```
+
+The first filter function changes our data set to only include English speakers. The second filter function only includes observations for professors who are 40 years old or older. So, these two functions are creating a subset of our original data.
+
+The mutation function on the last line creates a calculation for each observation and saves it under a new variable. Specifically, for each observation (row), it is taking the rating score given to the professor, subtracting off the mean of all the rating scores in the data, and dividing by the standard deviation of all the rating scores, creating a standardized rating score (a *t*-statistic).
+
+The Stockholm International Peace Research Institute Military Expenditure Database is an open source data set which contains consistent time series on the military spending of countries between 1949 and 2018. The availability of data varies considerably by country, but for a majority of countries that were independent at the time, data is available from the late nineteen-fifties at minimum.
+
+Military expenditure in local currency at current prices is presented according to both the financial year of each country and according to calendar year, calculated on the assumption that, where financial years do not correspond to calendar years, spending is distributed evenly through the year. Figures in constant (2017) and current United States dollars, as a share of GDP and per capita, are presented according to calendar year.
+
+```{r}
+library(readxl)
+military <- read_xlsx("military.xlsx")
+head(military)
+dim(military)
+nrow(military)
+ncol(military)
+```
+
+There are 190 rows (countries) in the data. There are 33 columns (variables), where one is country, one is known as notes, and the rest are designated spending for a year.
+
+```{r warning=FALSE}
+military <- military %>%
+  select(-Country, -Notes) %>%
+  mutate_if(is.character, as.numeric) %>%
+  mutate(Country=military$Country) %>%
+  select(Country, everything())
+
+military_clean <- military %>%
+  na_if("xxx") %>%
+  na_if(". .")
+```
+
+We can remove all the observations with missing values (NA), but in general we should do this without valid reason, or at the very minimum, without reporting how many missing values were present and how many observations were removed. The missing values (NA) tell us something about the data collected, and removing them affects the sampling coverage that we are utilizing (which then affects inferences we can formulate from our statistical results). Furthermore, this only removes observations with missing values (NA), not other missing values that are encoded as such (NA), which might not be obvious in very large data sets.
+
+```{r}
+military <- na.omit(military)
+unique(is.na(military))
+```
+
+Say the comparison we are interested in examining is the military expenditures of different countries across every year in the data. Unfortunately, this requires that each year is its own column. A common problem is a data set where some of the column names are not names of variables, but values of a variable. In the military spending  data, the column names represents values of a year variable, and each row represents 32 observations, not one observation. The data set we have now is considered to be in wide format. We need to turn all of the year columns into one variable column that has a long format.
+
+Generally, we will consider data to be computationally clean if each variable has its own column, each observation has its own row, and each value has its own cell. The name of the variable whose values form the column names is called the key. The name of the variables whose values are spread over the cells is called the value.
+
+```{r}
+military_long <- military_clean %>%
+  gather(-Country, key="year", value="spending")
+dim(military_long)
+
+# Mean and standard deviation of spending in the United States of America across all years
+military_long %>%
+  filter(Country=="USA") %>%
+  summarize(average=mean(spending), stdev=sd(spending), .groups='drop')
+# Mean and standard deviation of spending of all countries across all years
+military_long %>%
+  group_by(Country) %>%
+  summarize(average=mean(spending), stdev=sd(spending), .groups='drop')
+# Number of observations (years with spending values) for each country
+military_long %>%
+  filter(!is.na(spending)) %>%
+  count(Country)
+# Median of spending of all countries across 2016 to 2018
+military_long %>%
+  filter(year >= 2016) %>%
+  group_by(Country) %>%
+  summarize(median1618=median(spending), .groups='drop')
+```
+
+Consider measurements of the full expiratory lung volume collected from individuals as part of a study to understand the functional effects of smoking and exposure to second-hand smoke. The unit of observation is an individual There are 654 rows of five variables, which are age, expiratory lung volume, height, biological sex, and whether or not the individual smokes.
+
+```{r}
+lungs <- read.csv("expiration.csv")
+head(lungs)
+```
+
+Height appears to be inches, while volume appears to be in liters. This decision to utilize both metric and United States imperial measurements may be confusing in analysis and interpretations, especially if it is not immediately obvious what the units are.
+
+```{r}
+lungs %>%
+  group_by(smoke) %>%
+  summarize(mean=mean(volume), median=median(volume), 
+            sd=sd(volume), .groups='drop') %>%
+  kable()
+```
+
+When high lung volume is considered to be healthy, this does not mean that smoking is associated with improved health. Observing this pattern does not necessarily mean that smoking is associated with better lung volume or health. This plot does not take into consideration confounding variables that might explain this difference.
+
+```{r}
+boxplot(volume~smoke, data=lungs)
+```
+
+Confounding variables are those that influence both a predictor and response in the same pattern that is observed. So, a confounding variable in this case is one where we would see one value or category of the confounding variable having an association with low lung volumes and having an association with being a non-smoker. Also, another value or category of this confounding variable would have an association with high lung volumes and an association with being a smoker.
+
+When high lung volume is considered to be healthy, this does not mean that smoking is associated with improved health. One variable that could fit this pattern is age. Low ages are associated with smaller lung volumes and non-smoking, while higher ages are associated with higher lung volumes and more smoking.
+
+```{r}
+lungs %>%
+  group_by(smoke) %>%
+  summarize(minimum=min(age), q1=quantile(age, prob=0.25), 
+            median=median(age), q3=quantile(age, prob=0.75),
+            maximum=max(age), .groups='drop') %>%
+  kable()
+
+lungs <- lungs %>%
+  mutate(age_cat=factor(case_when(age <= 1 ~ "Infant",
+                                  age >= 2 & age <= 3 ~ "Toddler",
+                                  age > 3 & age <= 5 ~ "Preschooler",
+                                  age > 5 & age <= 11 ~ "Middle Childhood",
+                                  age > 11 & age <= 14 ~ "Preadolescence",
+                                  age > 14 & age <= 19 ~ "Adolescence")))
+
+plot(volume~age_cat, data=subset(lungs, smoke=="non-smoker", 
+                                 las=2, xlab="Age Group", main="Non-Smokers"))
+plot(volume~age_cat, data=subset(lungs, smoke=="smoker", 
+                                 las=2, xlab="Age Group", main="Non-Smokers"))
+
+# Additive Model
+smoke_lm <- lm(volume~smoke+age_cat, data=lungs)
+anova(smoke_lm)
+summary(smoke_lm)
+```
+
+A scatter plot is a natural way to visualize the relationship between two quantitative variables, where the observations are plotted as ordered pairs by utilizing some symbol. To obtain the residuals from the data model, we need to first fit a model utilizing the linear modeling function, with a quantitative response variable and a categorical explanatory variable. We then need to pull out the residuals from the model and store in a new variable in the data set. Once we have done these steps, we can create a density plot or histogram of the residuals of the model. By utilizing this plot, we can assess the assumption of normality of residuals. The constant variance assumption of simple linear regression states that the variability across the range of *x*-values is the same.
+
+```{r, message=FALSE, warning=FALSE}
+evals <- read_csv("evals.csv") %>% rename(sex=gender)
+```
+
+A scatter plot is a natural way to visualize the relationship between two quantitative variables, where the observations are plotted as ordered pairs by utilizing some symbol. To obtain the residuals from the data model, we need to first fit a model utilizing the linear modeling function, with a quantitative response variable and a categorical explanatory variable. We then need to pull out the residuals from the model and store in a new variable in the data set. Once we have done these steps, we can create a density plot or histogram of the residuals of the model. By utilizing this plot, we can assess the assumption of normality of residuals. The constant variance assumption of simple linear regression states that the variability across the range of *x*-values is the same.
+
+```{r}
+evals %>%
+  ggplot(aes(x=bty_avg, y=score)) + geom_point()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score)) + geom_jitter()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score, color=cls_level)) + geom_jitter()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score, color=cls_perc_eval)) + geom_jitter()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score)) + geom_jitter() + geom_smooth()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score)) + geom_jitter() + geom_smooth(method="lm")
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score, color=sex)) + geom_jitter() + geom_smooth()
+
+evals %>%
+  ggplot(aes(x=bty_avg, y=score)) + geom_jitter(aes(color=sex)) + geom_smooth()
+```
+
+A scatter plot is a natural way to visualize the relationship between two quantitative variables, where the observations are plotted as ordered pairs by utilizing some symbol. To obtain the residuals from the data model, we need to first fit a model utilizing the linear modeling function, with a quantitative response variable and a categorical explanatory variable. We then need to pull out the residuals from the model and store in a new variable in the data set. Once we have done these steps, we can create a density plot or histogram of the residuals of the model. By utilizing this plot, we can assess the assumption of normality of residuals. The constant variance assumption of simple linear regression states that the variability across the range of *x*-values is the same.
+
+```{r, message=FALSE}
+ggplot(data=evals, aes(x=bty_avg, y=score, color=rank)) + geom_jitter() +
+  geom_smooth(method="lm", se=FALSE) + facet_wrap(~sex) + 
+  labs(title="Professor Beauty Versus Course Evaluation Course",
+       subtitle="By Professor Rank And Sex",
+       y="Course Evaluation Score", x="Average Beauty Score",
+       color="Professor Position Rank")
+
+ggplot(data=evals, aes(x=cls_perc_eval, y=score, color=cls_level)) + 
+  geom_jitter() + geom_smooth(method="lm", se=FALSE) + 
+  facet_wrap(~cls_level) + 
+  labs(title="Professor Course Evaluation Score Versus Percentage Evaluations Completed",
+       subtitle="By Course Level",
+       y="Course Evaluation Score", x="Percent Course Evaluation",
+       color="Course Level")
+```
+
+A scatter plot is a natural way to visualize the relationship between two quantitative variables, where the observations are plotted as ordered pairs by utilizing some symbol. To obtain the residuals from the data model, we need to first fit a model utilizing the linear modeling function, with a quantitative response variable and a categorical explanatory variable. We then need to pull out the residuals from the model and store in a new variable in the data set. Once we have done these steps, we can create a density plot or histogram of the residuals of the model. By utilizing this plot, we can assess the assumption of normality of residuals. The constant variance assumption of simple linear regression states that the variability across the range of *x*-values is the same.
+
+```{r, warning=FALSE}
+evals_lm <- lm(score~bty_avg, data=evals)
+evals %>%
+  mutate(residuals=residuals(evals_lm)) %>%
+  ggplot(aes(x=residuals)) + geom_density(fill="tomato")
+plot(evals_lm, which=2)
+```
+
+Researchers examined the effect of human disturbance on the nesting of house sparrows. They counted breeding sparrows (in pairs) per hectare in 18 parks in Madrid, Spain and also counted the number of pedestrians per minute walking through each park.
+
+```{r}
+pedestrians <- c(1.75,5.83,5.33,4.67,7.17,5.5,9.33,6.83,7.5,10.8,11.3,11.4,10.5,12.8,13.8,17.8,16.2,19.8,21.9,26.6,28.7,32.6,38.2)
+sparrows <- c(14.2,30.1,71.2,77.5,75.9,121.8,132.1,159,181.9,184.3,194.6,219.1,246.8,166.9,162.2,134.5,94.1,88.6,90.2,44.3,14.2,15.8,47.5)
+disturbance <- as.data.frame(cbind(pedestrians, sparrows))
+
+linm <- lm(sparrows~pedestrians)
+summary(linm)
+```
+
+Researchers examined the effect of human disturbance on the nesting of house sparrows. They counted breeding sparrows (in pairs) per hectare in 18 parks in Madrid, Spain and also counted the number of pedestrians per minute walking through each park.
+
+```{r message=FALSE}
+scatterplot(sparrows~pedestrians, pch=16, ellipse=FALSE, smooth=FALSE, regLine=FALSE)
+plot(sparrows~pedestrians)
+ggplot(disturbance, aes(x=pedestrians, y=sparrows)) + geom_point()
+
+scatterplot(sparrows~pedestrians, pch=16, ellipse=FALSE, smooth=FALSE)
+plot(sparrows~pedestrians)
+abline(reg=linm, col="blue")
+ggplot(disturbance, aes(x=pedestrians, y=sparrows)) + geom_point() + 
+  geom_smooth(method="lm", se=FALSE)
+```
+
+Researchers examined the effect of human disturbance on the nesting of house sparrows. They counted breeding sparrows (in pairs) per hectare in 18 parks in Madrid, Spain and also counted the number of pedestrians per minute walking through each park.
+
+```{r}
+quadm <- lm(sparrows~pedestrians+I(pedestrians^2))
+summary(quadm)
+anova(linm, quadm)
+plot(sparrows~pedestrians)
+curve(quadm$coefficient[1]+quadm$coefficients[2]*x+quadm$coefficients[3]*x^2, col="blue", add=TRUE)
+```
+
+$\mu\{\text{S}|\text{P}\} = \beta_{0} + \beta_{1}\text{P} + \beta_{2}\text{P}^2 + \beta_{3}\text{P}^3$, where $\text{P}$ represents pedestrians and $\text{S}$ represents sparrows.
+
+```{r}
+cubm <- lm(sparrows~pedestrians+I(pedestrians^2)+I(pedestrians^3))
+summary(cubm)
+plot(sparrows~pedestrians)
+curve(cubm$coefficients[1] + cubm$coefficients[2]*x + cubm$coefficients[3]*x^2 + cubm$coefficients[4]*x^3, add=TRUE, col="blue")
+```
+
+$\mu\{\text{S}|\text{P}\} = \beta_{0} + \beta_{1}\text{P} + \beta_{2}\text{P}^2 + \beta_{3}\text{P}^3 + \beta_{4}\text{P}^4$
+
+```{r}
+quarm <- lm(sparrows~pedestrians+I(pedestrians^2)+I(pedestrians^3)+I(pedestrians^4))
+summary(quarm)
+plot(sparrows~pedestrians)
+curve(quarm$coefficients[1] + quarm$coefficients[2]*x + quarm$coefficients[3]*x^2 + quarm$coefficients[4]*x^3 + quarm$coefficients[5]*x^4, add=TRUE, col="blue")
+
+anova(quadm, cubm)
+anova(cubm, quarm)
+```
+
+Correlation does not imply causation.

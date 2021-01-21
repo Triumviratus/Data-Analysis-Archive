@@ -1,0 +1,130 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(Sleuth3)
+library(leaps)
+library(MASS)
+library(car)
+```
+
+There exist a number of methods for selecting variables when you have a large collection of potential explanatory variables that you need to narrow down. Such methods include adjusting for a large set of explanatory variables, fishing for explanations, prediction, and building a defensible model. In addition to removing variables from consideration, an equally important consideration is which variables should be included, regardless of significance or the method of selection. Some reasons to force inclusion are the variable is the treatment or exposure of interest, the variable helps to answer a scientific question, perhaps about interactions or after controlling for something of interest, or the variable is a logical confounding factor of a treatment-response relationship in an observational study. In general, an automated variable selection tool is only practicable when dealing with variables that meet none of these criteria. If possible, it is always best to specify your model based on scientific understanding or hypotheses, rather than allow the computer to decide for you.
+
+Multicollinearity is one setting in which it is important to choose from the available variables. If all are in the model, you can obtain nonsensical coefficients, obscure relationships, and inflat your variance substantially. In this case, you must first consider if one variable is more scientifically appropriate, or if there is a logical way to combine variables. If none of these apply, you can consider more automated approaches.
+
+In order to approach an analysis with numerous explanatory variables, you must **first** identify the key objectives, **then** screen the available variables, **then** perform an exploratory analysis, **then** perform transformations as necessary, **then** examine a residual plot after fitting a rich model (where you would consider outliers and any additional transformations), **then** utilize a computer-assisted technique for finding a suitable set of explanatory variables, thereby exerting enough control over the process to be sensitive to the questions of interest, and **lastly** proceed with the analysis by utilizing the selected explanatory variables.
+
+***SAT Example***
+
+They key objectives are to look for an explanation for the difference between states and account for selection of students.
+
+```{r}
+# Screen Variables
+sat <- case1201
+summary(sat)
+```
+
+***Exploratory Analysis***
+
+Obtain the correlations from all variables.
+
+```{r}
+round(cor(sat[,-c(1)]),2)
+pairs(sat[,-c(1)])
+```
+
+***Transformations***
+
+```{r}
+par(mfrow=c(1,2))
+plot(log(sat$Takers), sat$SAT)
+plot(sat$Expend, sat$SAT)
+```
+
+Fit an examine a preliminary model
+
+```{r}
+fit <- lm(SAT~log(Takers)+Income+Years+Public+Expend, data=sat)
+par(mfrow=c(2,2))
+plot(fit, which=c(1,2,4,5))
+sat[29,]
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+fullModel <- lm(SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, data=sat[-29,])
+summary(fullModel)
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+subsets <- regsubsets(SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, nbest=3, force.in=1, data=sat[-29,])
+cp <- summary(subsets)$cp
+varcount <- apply(summary(subsets)$which, 1, sum)
+plot(varcount, cp, xlab="p", ylab="Cp Statistic")
+abline(a=0, b=1)
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+plot(varcount, cp, xlab="p", ylab="Cp Statistic", ylim=c(-1.5,10))
+abline(a=0, b=1)
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+plot(subsets, ylim=c(-1.5,10), scale="Cp")
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+fitSelect <- lm(SAT~log(Takers)+Years+Expend+Public:Expend+Public+I(Expend^2)+Years:Public, data=sat[-29,])
+summary(fitSelect)
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+bic <- summary(subsets)$bic
+par(mfrow=c(1,2))
+plot(varcount, bic, xlab="p", ylab="BIC")
+plot(subsets)
+```
+
+***Selection Procedures With Interactions***
+
+```{r}
+aic <- bic-log(length(sat$Income))*(varcount+1)+(2*(varcount+1))
+par(mfrow=c(1,2))
+plot(bic, aic)
+plot(varcount, aic, xlab="p", ylab="AIC")
+```
+
+***Forward Selection***
+
+```{r}
+selectModel <- lm(SAT~1, data=sat[-29,])
+stepAIC(selectModel, scope=list(upper=~SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+I(Public^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, lower=~1), direction="forward")
+```
+
+***Backward Selection***
+
+```{r}
+selectModel <- lm(SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+I(Public^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, data=sat[-29,])
+stepAIC(selectModel, scope=list(upper=~SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+I(Public^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, lower=~1), direction="backward")
+```
+
+***Both Directions***
+
+```{r}
+selectModel <- lm(SAT~1, data=sat[-29,])
+stepAIC(selectModel, scope=list(upper=~SAT~log(Takers)+Income+Years+Public+Expend+I(Income^2)+I(Years^2)+I(Expend^2)+I(Public^2)+Income*Public+Expend*Public+log(Takers)*Public+Years*Public+Years*Income+log(Takers)*Income+Expend*Income+Years*Expend+Years*log(Takers)+log(Takers)*Expend, lower=~1), direction="both")
+
+fit1 <- lm(SAT~log(Takers)+Income+Years+Public+Expend+log(Takers)*Income+Income*Years+log(Takers)*Years+log(Takers)*Public+log(Takers)*Expend+Income*Public+Income*Expend+Years*Public+Years*Expend+Public*Expend, data=sat)
+Anova(fit1)
+```
+

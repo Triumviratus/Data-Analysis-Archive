@@ -1,0 +1,67 @@
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+library(Sleuth3)
+library(ggplot2)
+library(effects)
+library(carData)
+mammal <- case0902
+```
+
+***Choosing a Response Variable***
+
+```{r}
+par(mfrow=c(1,2))
+hist(mammal$Brain, breaks=100)
+hist(mammal$Litter, breaks=100)
+```
+
+***Simple Scatter Plot Matrix And Logarithmic Scatter Plot Matrix***
+
+```{r}
+pairs(~Brain+Body+Gestation+Litter, data=mammal, main="Simple Scatter Plot Matrix")
+pairs(~log(Brain)+log(Body)+log(Gestation)+log(Litter), data=mammal, main="Logarithmic Scatter Plot Matrix")
+```
+
+***Initial Model And Alternative Model***
+
+```{r}
+# Initial Model
+summary(lm(log(Brain)~log(Body)+log(Gestation), data=mammal))
+# Alternative Model
+summary(lm(formula=log(Brain)~log(Body)+log(Gestation)+log(Litter), data=mammal))
+```
+
+***Single-Line***
+
+```{r}
+flower <- case0901
+summary(lm(Flowers~Intensity, data=flower))
+ggplot(flower, aes(Intensity, y=Flowers)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+```
+
+***Varying Intercepts (Parallel Lines)***
+
+```{r}
+flower$Time <- factor(flower$Time)
+summary(lm(Flowers~Intensity+Time, data=flower))
+ggplot(flower, aes(x=Intensity, y=Flowers, color=Time)) + geom_point() + geom_smooth(method="lm", se=FALSE)
+```
+
+***Separate Lines (Allowed Interaction)***
+
+```{r}
+fit1 <- lm(Flowers~Intensity*Time, data=flower)
+summary(fit1)
+plot(allEffects(fit1), multiline=TRUE)
+```
+
+***Intensity As Categorical***
+
+```{r}
+flower$Intensity <- factor(flower$Intensity)
+fit2 <- lm(Flowers~Intensity, data=flower)
+summary(fit2)
+plot(allEffects(fit2), multiline=TRUE)
+```
+
